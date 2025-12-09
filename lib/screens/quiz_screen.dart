@@ -83,57 +83,60 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Progress indicator
-              Row(
-                children: [
-                  Text(
-                    'Question ${currentQuestionIndex + 1} of ${questions.length}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Progress indicator
+                Row(
+                  children: [
+                    Text(
+                      'Question ${currentQuestionIndex + 1} of ${questions.length}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${((currentQuestionIndex + 1) / questions.length * 100).toInt()}%',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFFBA1E4D),
+                    const Spacer(),
+                    Text(
+                      '${((currentQuestionIndex + 1) / questions.length * 100).toInt()}%',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFBA1E4D),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: (currentQuestionIndex + 1) / questions.length,
-                backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFBA1E4D)),
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              const SizedBox(height: 32),
-
-              // Question
-              Text(
-                question.question,
-                style: GoogleFonts.poppins(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                  height: 1.3,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: (currentQuestionIndex + 1) / questions.length,
+                  backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFBA1E4D)),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                const SizedBox(height: 32),
 
-              // Options
-              Expanded(
-                child: ListView.builder(
+                // Question
+                Text(
+                  question.question,
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Options
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: question.options.length,
                   itemBuilder: (context, index) {
                     return _buildOptionCard(
@@ -143,54 +146,55 @@ class _QuizScreenState extends State<QuizScreen> {
                     );
                   },
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Next/Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: selectedAnswerIndex == null
-                      ? null
-                      : () {
-                          if (selectedAnswerIndex == question.correctAnswerIndex) {
-                            correctAnswers++;
-                          }
-                          
-                          if (currentQuestionIndex < questions.length - 1) {
-                            setState(() {
-                              currentQuestionIndex++;
-                              selectedAnswerIndex = null;
-                            });
-                          } else {
-                            setState(() {
-                              showResult = true;
-                            });
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBA1E4D),
-                    disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                // Next/Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: selectedAnswerIndex == null
+                        ? null
+                        : () {
+                            if (selectedAnswerIndex == question.correctAnswerIndex) {
+                              correctAnswers++;
+                            }
+                            
+                            if (currentQuestionIndex < questions.length - 1) {
+                              setState(() {
+                                currentQuestionIndex++;
+                                selectedAnswerIndex = null;
+                              });
+                            } else {
+                              setState(() {
+                                showResult = true;
+                              });
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFBA1E4D),
+                      disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    currentQuestionIndex < questions.length - 1
-                        ? 'Next Question'
-                        : 'Submit Quiz',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    child: Text(
+                      currentQuestionIndex < questions.length - 1
+                          ? 'Next Question'
+                          : 'Submit Quiz',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 20), // Extra padding at bottom
+              ],
+            ),
           ),
         ),
       ),

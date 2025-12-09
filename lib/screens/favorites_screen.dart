@@ -72,6 +72,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   String? _getCourseImagePath(String courseTitle) {
+    // Normalize title for matching (case-insensitive, trim whitespace)
+    final normalizedTitle = courseTitle.trim().toLowerCase();
+    
+    // Map course titles to image paths (flexible matching)
+    if (normalizedTitle.contains('ux master') || normalizedTitle.contains('ux course') || normalizedTitle == 'ux master course') {
+      return 'assets/images/ux.png';
+    } else if (normalizedTitle.contains('ui master') || normalizedTitle.contains('ui course') || normalizedTitle == 'ui master course') {
+      return 'assets/images/ui.png';
+    } else if (normalizedTitle.contains('unity') && normalizedTitle.contains('game')) {
+      return 'assets/images/unity.png';
+    } else if (normalizedTitle.contains('3d') || normalizedTitle.contains('grow your 3d')) {
+      return 'assets/images/grow you 3d skills.png';
+    } else if (normalizedTitle.contains('ai') || normalizedTitle.contains('machine learning')) {
+      return 'assets/images/AI and machine learning basics.png';
+    } else if (normalizedTitle.contains('react') || (normalizedTitle.contains('web') && normalizedTitle.contains('development'))) {
+      return 'assets/images/react web development.png';
+    } else if (normalizedTitle.contains('python')) {
+      return 'assets/images/Python Programming Mastery.png';
+    } else if (normalizedTitle.contains('unreal') || normalizedTitle.contains('ue5')) {
+      return 'assets/images/Unreal Engine 5 basics.png';
+    }
+    
+    // Exact matches (for backward compatibility)
     switch (courseTitle) {
       case 'UX Master Course':
         return 'assets/images/ux.png';
@@ -262,6 +285,77 @@ class _FavoriteCourseCard extends StatelessWidget {
     required this.onRemove,
   });
 
+  Color _getIconColor(String color) {
+    switch (color.toLowerCase()) {
+      case 'purple':
+        return const Color(0xFFBA1E4D);
+      case 'orange':
+        return const Color(0xFFFF6B35);
+      case 'blue':
+        return const Color(0xFF4A90E2);
+      case 'yellow':
+        return const Color(0xFFFFC107);
+      case 'green':
+        return const Color(0xFF4CAF50);
+      case 'teal':
+        return const Color(0xFF26A69A);
+      case 'indigo':
+        return const Color(0xFF3F51B5);
+      case 'red':
+        return const Color(0xFFE91E63);
+      default:
+        return const Color(0xFFFFC107);
+    }
+  }
+
+  Widget _buildCourseImage(String imagePath, {required double width, required double height}) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: _getIconColor(course.imageColor).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.play_circle_filled,
+              color: _getIconColor(course.imageColor),
+              size: 30,
+            ),
+          );
+        },
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: _getIconColor(course.imageColor).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.play_circle_filled,
+              color: _getIconColor(course.imageColor),
+              size: 30,
+            ),
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -295,14 +389,13 @@ class _FavoriteCourseCard extends StatelessWidget {
         child: Row(
           children: [
             // Course Icon/Image
-            getCourseImagePath(course.title) != null
+            (course.coverImagePath ?? getCourseImagePath(course.title)) != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      getCourseImagePath(course.title)!,
+                    child: _buildCourseImage(
+                      course.coverImagePath ?? getCourseImagePath(course.title)!,
                       width: 60,
                       height: 60,
-                      fit: BoxFit.cover,
                     ),
                   )
                 : Container(
