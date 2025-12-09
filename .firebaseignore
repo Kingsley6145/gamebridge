@@ -1,0 +1,86 @@
+# Firebase ignore file
+.git
+.gitignore
+.firebaserc
+firebase.json
+.firebaseignore
+README.md
+*.md
+.vscode
+.idea
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+android/
+android_*/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+local.properties
+*.iml
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+
+# iOS
+ios/
+ios_*/
+*.xcodeproj/
+*.xcworkspace/
+*.xcuserdata/
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+DerivedData/
+
+# macOS
+macos/
+macos_*/
+
+# Linux
+linux/
+linux_*/
+
+# Windows
+windows/
+windows_*/
+
+# Web
+web/
+
+# Test
+test/
+*.test.dart
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+

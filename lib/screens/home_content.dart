@@ -1,21 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/course.dart';
-import '../data/courses_data.dart';
+import '../data/courses_data.dart' show allCourses, streamCourses;
 import 'course_detail_screen.dart';
 import 'notifications_screen.dart';
 
-class HomeContent extends StatelessWidget {
+class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
+
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+
+  Color _getIconColor(String color) {
+    switch (color.toLowerCase()) {
+      case 'purple':
+        return const Color(0xFFBA1E4D);
+      case 'orange':
+        return const Color(0xFFFF6B35);
+      case 'blue':
+        return const Color(0xFF4A90E2);
+      case 'yellow':
+        return const Color(0xFFFFC107);
+      case 'green':
+        return const Color(0xFF4CAF50);
+      case 'teal':
+        return const Color(0xFF26A69A);
+      case 'indigo':
+        return const Color(0xFF3F51B5);
+      case 'red':
+        return const Color(0xFFE91E63);
+      default:
+        return const Color(0xFFFFC107);
+    }
+  }
+
+  String? _getCourseImagePath(String courseTitle) {
+    // Normalize title for matching (case-insensitive, trim whitespace)
+    final normalizedTitle = courseTitle.trim().toLowerCase();
+    
+    // Map course titles to image paths (flexible matching)
+    if (normalizedTitle.contains('ux master') || normalizedTitle.contains('ux course') || normalizedTitle == 'ux master course') {
+      return 'assets/images/ux.png';
+    } else if (normalizedTitle.contains('ui master') || normalizedTitle.contains('ui course') || normalizedTitle == 'ui master course') {
+      return 'assets/images/ui.png';
+    } else if (normalizedTitle.contains('unity') && normalizedTitle.contains('game')) {
+      return 'assets/images/unity.png';
+    } else if (normalizedTitle.contains('3d') || normalizedTitle.contains('grow your 3d')) {
+      return 'assets/images/grow you 3d skills.png';
+    } else if (normalizedTitle.contains('ai') || normalizedTitle.contains('machine learning')) {
+      return 'assets/images/AI and machine learning basics.png';
+    } else if (normalizedTitle.contains('react') || (normalizedTitle.contains('web') && normalizedTitle.contains('development'))) {
+      return 'assets/images/react web development.png';
+    } else if (normalizedTitle.contains('python')) {
+      return 'assets/images/Python Programming Mastery.png';
+    } else if (normalizedTitle.contains('unreal') || normalizedTitle.contains('ue5')) {
+      return 'assets/images/Unreal Engine 5 basics.png';
+    }
+    
+    // Exact matches (for backward compatibility)
+    switch (courseTitle) {
+      case 'UX Master Course':
+        return 'assets/images/ux.png';
+      case 'UI Master Course':
+        return 'assets/images/ui.png';
+      case 'Unity Game Development':
+        return 'assets/images/unity.png';
+      case 'Grow Your 3D Skills':
+        return 'assets/images/grow you 3d skills.png';
+      case 'AI & Machine Learning Basics':
+        return 'assets/images/AI and machine learning basics.png';
+      case 'React Web Development':
+        return 'assets/images/react web development.png';
+      case 'Python Programming Mastery':
+        return 'assets/images/Python Programming Mastery.png';
+      case 'Unreal Engine 5 Basics':
+        return 'assets/images/Unreal Engine 5 basics.png';
+      default:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: StreamBuilder<List<Course>>(
+        stream: streamCourses(),
+        builder: (context, snapshot) {
+          // Get courses from stream or fallback to cached
+          final courses = snapshot.hasData && snapshot.data!.isNotEmpty 
+              ? snapshot.data! 
+              : allCourses;
+          
+          return SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // Header Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -104,54 +188,157 @@ class HomeContent extends StatelessWidget {
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 400,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(left: 20, right: 20),
-                    itemCount: 5,
-                    itemBuilder: (context, index) {
-                      final images = [
-                        'assets/images/ux.png',
-                        'assets/images/ui.png',
-                        'assets/images/unity.png',
-                        'assets/images/grow you 3d skills.png',
-                        'assets/images/AI and machine learning basics.png',
-                      ];
-                      final courses = [
-                        allCourses.firstWhere((c) => c.title == 'UX Master Course'),
-                        allCourses.firstWhere((c) => c.title == 'UI Master Course'),
-                        allCourses.firstWhere((c) => c.title == 'Unity Game Development'),
-                        allCourses.firstWhere((c) => c.title == 'Grow Your 3D Skills'),
-                        allCourses.firstWhere((c) => c.title == 'AI & Machine Learning Basics'),
-                      ];
-                      return Transform.translate(
-                        offset: Offset(index > 0 ? -30.0 * index : 0, 0),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CourseDetailScreen(course: courses[index]),
-                              ),
-                            );
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: SizedBox(
-                              height: 400,
-                              width: 320,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Image.asset(
-                                  images[index],
-                                  fit: BoxFit.contain,
+                  child: courses.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Loading courses...',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: theme.brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
+                        )
+                      : Builder(
+                          builder: (context) {
+                            // Filter only trendy courses from Firebase
+                            final trendyCourses = courses.where((course) => course.isTrendy).toList();
+                            
+                            if (trendyCourses.isEmpty) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Text(
+                                    'No trending courses available',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: theme.brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                            
+                            return ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.only(left: 20, right: 20),
+                              itemCount: trendyCourses.length > 5 ? 5 : trendyCourses.length,
+                              itemBuilder: (context, index) {
+                                final course = trendyCourses[index];
+                                // Try coverImagePath from Firebase first, then fallback to title-based mapping
+                                final imagePath = course.coverImagePath ?? _getCourseImagePath(course.title);
+                                return Transform.translate(
+                                  offset: Offset(index > 0 ? -30.0 * index : 0, 0),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => CourseDetailScreen(course: course),
+                                        ),
+                                      );
+                                    },
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: SizedBox(
+                                        height: 400,
+                                        width: 320,
+                                        child: imagePath != null
+                                            ? imagePath.startsWith('http://') || imagePath.startsWith('https://')
+                                                ? Align(
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Image.network(
+                                                      imagePath,
+                                                      fit: BoxFit.contain,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        // Fallback to gradient if network image fails
+                                                        return Container(
+                                                          decoration: BoxDecoration(
+                                                            gradient: LinearGradient(
+                                                              begin: Alignment.topLeft,
+                                                              end: Alignment.bottomRight,
+                                                              colors: [
+                                                                _getIconColor(course.imageColor),
+                                                                _getIconColor(course.imageColor).withOpacity(0.7),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: Icon(
+                                                              Icons.play_circle_filled,
+                                                              color: Colors.white,
+                                                              size: 80,
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  )
+                                                : Align(
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Image.asset(
+                                                      imagePath,
+                                                      fit: BoxFit.contain,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        // Fallback to gradient if asset image fails
+                                                        return Container(
+                                                          decoration: BoxDecoration(
+                                                            gradient: LinearGradient(
+                                                              begin: Alignment.topLeft,
+                                                              end: Alignment.bottomRight,
+                                                              colors: [
+                                                                _getIconColor(course.imageColor),
+                                                                _getIconColor(course.imageColor).withOpacity(0.7),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: Icon(
+                                                              Icons.play_circle_filled,
+                                                              color: Colors.white,
+                                                              size: 80,
+                                                            ),
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                  )
+                                            : Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                    colors: [
+                                                      _getIconColor(course.imageColor),
+                                                      _getIconColor(course.imageColor).withOpacity(0.7),
+                                                    ],
+                                                  ),
+                                                ),
+                                                child: Center(
+                                                  child: Icon(
+                                                    Icons.play_circle_filled,
+                                                    color: Colors.white,
+                                                    size: 80,
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -182,14 +369,16 @@ class HomeContent extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...getBestOfTheWeek().map((course) => _CourseListItem(course: course)),
+                  ...courses.take(5).map((course) => _CourseListItem(course: course)),
                 ],
               ),
             ),
 
             const SizedBox(height: 100), // Space for bottom nav
-          ],
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -224,6 +413,29 @@ class _CourseListItem extends StatelessWidget {
   }
 
   String? _getCourseImagePath(String courseTitle) {
+    // Normalize title for matching (case-insensitive, trim whitespace)
+    final normalizedTitle = courseTitle.trim().toLowerCase();
+    
+    // Map course titles to image paths (flexible matching)
+    if (normalizedTitle.contains('ux master') || normalizedTitle.contains('ux course') || normalizedTitle == 'ux master course') {
+      return 'assets/images/ux.png';
+    } else if (normalizedTitle.contains('ui master') || normalizedTitle.contains('ui course') || normalizedTitle == 'ui master course') {
+      return 'assets/images/ui.png';
+    } else if (normalizedTitle.contains('unity') && normalizedTitle.contains('game')) {
+      return 'assets/images/unity.png';
+    } else if (normalizedTitle.contains('3d') || normalizedTitle.contains('grow your 3d')) {
+      return 'assets/images/grow you 3d skills.png';
+    } else if (normalizedTitle.contains('ai') || normalizedTitle.contains('machine learning')) {
+      return 'assets/images/AI and machine learning basics.png';
+    } else if (normalizedTitle.contains('react') || (normalizedTitle.contains('web') && normalizedTitle.contains('development'))) {
+      return 'assets/images/react web development.png';
+    } else if (normalizedTitle.contains('python')) {
+      return 'assets/images/Python Programming Mastery.png';
+    } else if (normalizedTitle.contains('unreal') || normalizedTitle.contains('ue5')) {
+      return 'assets/images/Unreal Engine 5 basics.png';
+    }
+    
+    // Exact matches (for backward compatibility)
     switch (courseTitle) {
       case 'UX Master Course':
         return 'assets/images/ux.png';
@@ -243,6 +455,54 @@ class _CourseListItem extends StatelessWidget {
         return 'assets/images/Unreal Engine 5 basics.png';
       default:
         return null;
+    }
+  }
+
+  Widget _buildCourseImage(String imagePath, {required double width, required double height}) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: _getIconColor(course.imageColor).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.play_circle_filled,
+              color: _getIconColor(course.imageColor),
+              size: 30,
+            ),
+          );
+        },
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: _getIconColor(course.imageColor).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.play_circle_filled,
+              color: _getIconColor(course.imageColor),
+              size: 30,
+            ),
+          );
+        },
+      );
     }
   }
 
@@ -273,14 +533,13 @@ class _CourseListItem extends StatelessWidget {
         child: Row(
           children: [
             // Course Icon/Image
-            _getCourseImagePath(course.title) != null
+            (course.coverImagePath ?? _getCourseImagePath(course.title)) != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      _getCourseImagePath(course.title)!,
+                    child: _buildCourseImage(
+                      course.coverImagePath ?? _getCourseImagePath(course.title)!,
                       width: 60,
                       height: 60,
-                      fit: BoxFit.cover,
                     ),
                   )
                 : Container(

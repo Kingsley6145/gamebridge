@@ -37,7 +37,12 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
       // Use video URL from module
       final videoPath = widget.module.videoUrl;
       
-      _controller = VideoPlayerController.asset(videoPath);
+      // Check if it's a URL (http/https) or an asset path
+      if (videoPath.startsWith('http://') || videoPath.startsWith('https://')) {
+        _controller = VideoPlayerController.networkUrl(Uri.parse(videoPath));
+      } else {
+        _controller = VideoPlayerController.asset(videoPath);
+      }
 
       await _controller!.initialize();
       // Add listener to update UI when playback state changes
@@ -111,6 +116,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

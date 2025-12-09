@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "168104461274",
+    "project_id": "gamebridge-ec7cd",
+    "storage_bucket": "gamebridge-ec7cd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168104461274:android:0684147e9d6b5e084676e3",
+        "android_client_info": {
+          "package_name": "com.example.gamebridge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA49CUWMPHyG0oTxpEyK_2FVo1bQQJeqeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+

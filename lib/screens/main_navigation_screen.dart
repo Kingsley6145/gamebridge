@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'home_content.dart';
 import 'categories_screen.dart';
@@ -16,7 +17,6 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   bool _isBottomNavBarVisible = true;
-  double _lastScrollOffset = 0.0;
 
   Widget _getScreen(int index) {
     switch (index) {
@@ -36,46 +36,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollUpdateNotification) {
-      final currentOffset = notification.metrics.pixels;
-      final scrollDelta = currentOffset - _lastScrollOffset;
-      
-      // React immediately to ANY scroll movement, no matter how small
-      if (scrollDelta.abs() > 0.01) { // Even tiny movement triggers
-        if (scrollDelta > 0) {
-          // Scrolling DOWN - hide nav bar immediately
-          if (_isBottomNavBarVisible && currentOffset > 5) {
-            setState(() {
-              _isBottomNavBarVisible = false;
-            });
-          }
-        } else if (scrollDelta < 0) {
-          // Scrolling UP - show nav bar immediately
-          if (!_isBottomNavBarVisible) {
-            setState(() {
-              _isBottomNavBarVisible = true;
-            });
-          }
-        }
-      }
-      
-      // Always show nav bar when at the very top
-      if (currentOffset <= 5) {
-        if (!_isBottomNavBarVisible) {
-          setState(() {
-            _isBottomNavBarVisible = true;
-          });
-        }
-      }
-      
-      _lastScrollOffset = currentOffset;
-    } else if (notification is ScrollStartNotification) {
-      // Initialize scroll tracking when scroll starts
-      _lastScrollOffset = notification.metrics.pixels;
-    } else if (notification is ScrollEndNotification) {
-      // Reset scroll tracking when scroll ends
-      _lastScrollOffset = notification.metrics.pixels;
-    }
+    // Disabled nav bar hide/show feature to prevent build during frame errors
+    // The overscroll indicator was triggering setState during layout
+    // This can be re-enabled later with a more robust implementation
+    return;
   }
 
   void _onTabChanged(int index) {
@@ -83,7 +47,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _currentIndex = index;
       // Reset nav bar visibility when switching tabs
       _isBottomNavBarVisible = true;
-      _lastScrollOffset = 0.0;
     });
   }
 
@@ -94,8 +57,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: NotificationListener<ScrollNotification>(
         onNotification: (ScrollNotification notification) {
-          _handleScrollNotification(notification);
-          return false; // Allow the notification to continue bubbling
+          // Consume all scroll-related notifications to prevent overscroll indicator errors
+          // This prevents the _StretchController from triggering setState during layout
+          if (notification is OverscrollNotification) {
+            return true; // Consume overscroll notifications
+          }
+          // Don't process scroll notifications for nav bar hide/show to avoid errors
+          return false; // Allow notifications to continue but don't process them
         },
         child: _getScreen(_currentIndex),
       ),

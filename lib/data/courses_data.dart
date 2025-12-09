@@ -1,6 +1,103 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/course.dart';
+import 'firebase_service.dart';
 
-final List<Course> allCourses = [
+final FirebaseService _firebaseService = FirebaseService();
+List<Course> _cachedCourses = [];
+bool _isInitialized = false;
+
+// Cache key for storing courses locally
+const String _coursesCacheKey = 'cached_courses';
+
+// Initialize courses - loads from cache immediately, then fetches from Firebase
+Future<void> initializeCourses() async {
+  if (_isInitialized) return;
+  
+  // Load from cache immediately (instant loading)
+  await _loadCoursesFromCache();
+  
+  // Fetch fresh data from Firebase in the background
+  fetchCoursesFromFirebase().catchError((error) {
+    print('Background fetch failed: $error');
+    // Keep using cached data if fetch fails
+  });
+  
+  _isInitialized = true;
+}
+
+// Load courses from local cache (instant)
+Future<void> _loadCoursesFromCache() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedData = prefs.getString(_coursesCacheKey);
+    
+    if (cachedData != null) {
+      final List<dynamic> jsonList = jsonDecode(cachedData);
+      _cachedCourses = jsonList
+          .map((json) => Course.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+      print('Loaded ${_cachedCourses.length} courses from cache');
+    } else {
+      print('No cached courses found');
+    }
+  } catch (e) {
+    print('Error loading courses from cache: $e');
+  }
+}
+
+// Save courses to local cache
+Future<void> _saveCoursesToCache(List<Course> courses) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = courses.map((course) => course.toJson()).toList();
+    final jsonString = jsonEncode(jsonList);
+    await prefs.setString(_coursesCacheKey, jsonString);
+    print('Saved ${courses.length} courses to cache');
+  } catch (e) {
+    print('Error saving courses to cache: $e');
+  }
+}
+
+// Fetch courses from Firebase and update cache
+Future<List<Course>> fetchCoursesFromFirebase() async {
+  try {
+    final courses = await _firebaseService.fetchCourses();
+    if (courses.isNotEmpty) {
+      _cachedCourses = courses;
+      // Update cache with fresh data
+      await _saveCoursesToCache(courses);
+      print('Courses updated from Firebase: ${courses.length} courses');
+    }
+    return _cachedCourses;
+  } catch (e) {
+    print('Error fetching courses: $e');
+    return _cachedCourses; // Return cached courses if fetch fails
+  }
+}
+
+// Get cached courses (for immediate access)
+List<Course> get allCourses => _cachedCourses;
+
+// Stream courses for real-time updates (includes cached courses immediately)
+Stream<List<Course>> streamCourses() async* {
+  // First emit cached courses immediately (for instant loading)
+  if (_cachedCourses.isNotEmpty) {
+    yield _cachedCourses;
+  }
+  
+  // Then listen to Firebase updates
+  yield* _firebaseService.streamCourses().map((courses) {
+    if (courses.isNotEmpty) {
+      _cachedCourses = courses;
+      _saveCoursesToCache(courses); // Update cache when Firebase data arrives
+    }
+    return _cachedCourses;
+  });
+}
+
+// Legacy dummy data (kept for reference but not used)
+final List<Course> _dummyCourses = [
   Course(
     id: '1',
     title: 'UX Master Course',

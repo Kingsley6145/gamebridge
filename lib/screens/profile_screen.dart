@@ -38,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return SafeArea(
       child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(

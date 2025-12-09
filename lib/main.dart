@@ -1,23 +1,38 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/course_detail_screen.dart';
 import 'models/course.dart';
-import 'data/courses_data.dart';
+import 'data/courses_data.dart' show initializeCourses;
 import 'data/theme_manager.dart';
 
 // Import Android webview implementation to ensure it's registered
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    print('Firebase initialization error: $e');
+  }
   
   // Register the Android WebView platform implementation
   if (Platform.isAndroid) {
     WebViewPlatform.instance = AndroidWebViewPlatform();
   }
+  
+  // Initialize courses - loads from cache immediately, then fetches from Firebase in background
+  // This ensures instant loading while keeping data fresh
+  initializeCourses().catchError((error) {
+    print('Failed to initialize courses: $error');
+    // App will continue with empty courses list
+  });
   
   runApp(const GamebridgeApp());
 }

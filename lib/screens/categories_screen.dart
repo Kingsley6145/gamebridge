@@ -17,23 +17,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   String? selectedDuration;
   bool showPremiumOnly = false;
 
-  List<String> get categories => [
-        'All',
-        'Game Development',
-        'Programming',
-        'UI/UX',
-        'AI',
-        'Web Development',
-      ];
-
   List<String> get difficulties => ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
   List<String> get durations => ['All', '< 3 hours', '3-6 hours', '6-10 hours', '> 10 hours'];
-
-  int getCourseCountForCategory(String category) {
-    if (category == 'All') return allCourses.length;
-    return allCourses.where((course) => course.category == category).length;
-  }
 
   List<Course> getFilteredCourses() {
     List<Course> filtered = List.from(allCourses);
@@ -69,7 +55,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Categories & Filters',
+                      'Filters',
                       style: GoogleFonts.poppins(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -81,106 +67,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
             ),
 
-            // Categories Section
+            // Filters Section
             Expanded(
               child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Categories',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 120,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(left: 20, right: 20),
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          final category = categories[index];
-                          final isSelected = selectedCategory == category ||
-                              (selectedCategory == null && category == 'All');
-                          final count = getCourseCountForCategory(category);
-
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedCategory = category == 'All' ? null : category;
-                              });
-                            },
-                            child: Container(
-                              width: 140,
-                              margin: const EdgeInsets.only(right: 12),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xFFBA1E4D)
-                                    : cardColor,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isSelected
-                                        ? const Color(0xFFBA1E4D).withOpacity(0.3)
-                                        : Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    category,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected ? Colors.white : textColor,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Colors.white.withOpacity(0.2)
-                                          : const Color(0xFFBA1E4D).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '$count courses',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : const Color(0xFFBA1E4D),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
                     // Filters Section
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),

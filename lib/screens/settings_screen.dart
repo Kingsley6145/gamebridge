@@ -57,6 +57,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(

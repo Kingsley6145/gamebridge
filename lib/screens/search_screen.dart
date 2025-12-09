@@ -199,6 +199,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   )
                 : SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
