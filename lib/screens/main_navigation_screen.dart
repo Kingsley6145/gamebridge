@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'home_content.dart';
 import 'categories_screen.dart';
 import 'favorites_screen.dart';
 import 'search_screen.dart';
 import 'profile_screen.dart';
+import '../data/favorites_manager.dart';
+import '../data/auth_service.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -17,6 +20,8 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   bool _isBottomNavBarVisible = true;
+  final FavoritesManager _favoritesManager = FavoritesManager();
+  final AuthService _authService = AuthService();
 
   Widget _getScreen(int index) {
     switch (index) {
@@ -40,6 +45,40 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // The overscroll indicator was triggering setState during layout
     // This can be re-enabled later with a more robust implementation
     return;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize favorites when user logs in
+    _initializeFavorites();
+    
+    // Listen to auth state changes to reload favorites
+    _authService.authStateChanges.listen((user) {
+      if (user != null) {
+        // User logged in - reload favorites
+        _favoritesManager.reload().catchError((error) {
+          print('Error reloading favorites after login: $error');
+        });
+      } else {
+        // User logged out - clear favorites (optional, since we check auth in FirebaseService)
+        if (_favoritesManager.isInitialized) {
+          _favoritesManager.reload().catchError((error) {
+            print('Error clearing favorites after logout: $error');
+          });
+        }
+      }
+    });
+  }
+  
+  Future<void> _initializeFavorites() async {
+    try {
+      if (!_favoritesManager.isInitialized) {
+        await _favoritesManager.initialize();
+      }
+    } catch (e) {
+      print('Error initializing favorites in MainNavigationScreen: $e');
+    }
   }
 
   void _onTabChanged(int index) {

@@ -16,8 +16,27 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   final FavoritesManager _favoritesManager = FavoritesManager();
+  bool _isLoadingFavorite = false;
 
   bool get isFavorite => _favoritesManager.isFavorite(widget.course.id);
+  
+  @override
+  void initState() {
+    super.initState();
+    // Initialize favorites if not already initialized
+    if (!_favoritesManager.isInitialized) {
+      _favoritesManager.initialize().catchError((error) {
+        print('Error initializing favorites: $error');
+      });
+    }
+    
+    // Listen to favorite changes
+    _favoritesManager.favoritesStream.listen((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
 
   Color _getColorFromString(String color) {
     switch (color.toLowerCase()) {
@@ -219,22 +238,48 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           size: 20,
                         ),
                       ),
-                      onSelected: (value) {
+                      onSelected: (value) async {
                         if (value == 'favorite') {
+                          if (_isLoadingFavorite) return;
+                          
                           setState(() {
-                            _favoritesManager.toggleFavorite(widget.course.id);
+                            _isLoadingFavorite = true;
                           });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                isFavorite
-                                    ? 'Added to favorites'
-                                    : 'Removed from favorites',
-                              ),
-                              backgroundColor: courseColor,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
+                          
+                          try {
+                            await _favoritesManager.toggleFavorite(widget.course.id);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    _favoritesManager.isFavorite(widget.course.id)
+                                        ? 'Added to favorites'
+                                        : 'Removed from favorites',
+                                  ),
+                                  backgroundColor: courseColor,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Error: ${e.toString()}',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _isLoadingFavorite = false;
+                              });
+                            }
+                          }
                         } else if (value == 'share') {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -248,16 +293,29 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       itemBuilder: (BuildContext context) => [
                         PopupMenuItem<String>(
                           value: 'favorite',
+                          enabled: !_isLoadingFavorite,
                           child: Row(
                             children: [
-                              Icon(
-                                isFavorite ? Icons.favorite : Icons.favorite_border,
-                                color: isFavorite ? Colors.red : (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A)),
-                                size: 20,
-                              ),
+                              if (_isLoadingFavorite)
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  color: isFavorite ? Colors.red : (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A)),
+                                  size: 20,
+                                ),
                               const SizedBox(width: 12),
                               Text(
-                                isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+                                _isLoadingFavorite
+                                    ? 'Loading...'
+                                    : (isFavorite ? 'Remove from Favorites' : 'Add to Favorites'),
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),

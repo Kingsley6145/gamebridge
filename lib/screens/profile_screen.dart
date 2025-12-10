@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../data/theme_manager.dart';
+import '../data/auth_service.dart';
 import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,11 +14,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ThemeManager _themeManager = ThemeManager();
+  final AuthService _authService = AuthService();
+  User? _user;
 
   @override
   void initState() {
     super.initState();
     _themeManager.addListener(_onThemeChanged);
+    _user = _authService.currentUser;
   }
 
   void _onThemeChanged() {
@@ -27,6 +32,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _themeManager.removeListener(_onThemeChanged);
     super.dispose();
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Logout',
+          style: GoogleFonts.poppins(),
+        ),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Logout',
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _authService.signOut();
+        // Navigation will be handled by auth state listener
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -63,15 +118,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: const Color(0xFFBA1E4D).withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 50,
-                        color: Color(0xFFBA1E4D),
-                      ),
+                      child: _user?.photoURL != null
+                          ? ClipOval(
+                              child: Image.network(
+                                _user!.photoURL!,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Color(0xFFBA1E4D),
+                                  );
+                                },
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Color(0xFFBA1E4D),
+                            ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'User Name',
+                      _user?.displayName ?? 'User',
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -80,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'user@example.com',
+                      _user?.email ?? 'No email',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -99,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }),
               _buildMenuItem(context, Icons.notifications_outlined, 'Notifications'),
               _buildMenuItem(context, Icons.help_outline, 'Help & Support'),
-              _buildMenuItem(context, Icons.logout, 'Logout', isLogout: true),
+              _buildMenuItem(context, Icons.logout, 'Logout', isLogout: true, onTap: _handleLogout),
               const SizedBox(height: 100), // Space for bottom nav
             ],
           ),

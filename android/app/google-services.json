@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "168104461274",
+    "firebase_url": "https://gamebridge-ec7cd-default-rtdb.firebaseio.com",
     "project_id": "gamebridge-ec7cd",
     "storage_bucket": "gamebridge-ec7cd.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.gamebridge"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "168104461274-t1pkme26147npcm58rnd09cgmcqajcu2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.gamebridge",
+            "certificate_hash": "5423bc639127d6e056a7063b07906ca6d8a4f4be"
+          }
+        },
+        {
+          "client_id": "168104461274-j5crvmqasjfcqhkiulcipq1p6qlh85of.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA49CUWMPHyG0oTxpEyK_2FVo1bQQJeqeE"
@@ -20,11 +34,15 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "168104461274-j5crvmqasjfcqhkiulcipq1p6qlh85of.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
   ],
   "configuration_version": "1"
 }
-

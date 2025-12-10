@@ -7,6 +7,7 @@ import 'screens/course_detail_screen.dart';
 import 'models/course.dart';
 import 'data/courses_data.dart' show initializeCourses;
 import 'data/theme_manager.dart';
+import 'widgets/auth_wrapper.dart';
 
 // Import Android webview implementation to ensure it's registered
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -87,7 +88,7 @@ class _GamebridgeAppState extends State<GamebridgeApp> {
         brightness: Brightness.dark,
       ),
       themeMode: _themeManager.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: const MainNavigationScreen(),
+      home: const AuthWrapper(),
       routes: {
         '/course-detail': (context) {
           final course = ModalRoute.of(context)!.settings.arguments as Course;

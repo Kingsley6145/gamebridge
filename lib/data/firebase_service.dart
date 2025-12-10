@@ -1,35 +1,41 @@
 import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/course.dart';
 
 class FirebaseService {
-  // Connect to the admin panel's Firebase project (gametibe2025)
-  // Database URL for gametibe2025 project
-  static const String _databaseURL = 'https://gametibe2025-default-rtdb.firebaseio.com/';
-  
+  // Use the default Firebase Database instance from google-services.json
+  // This ensures authentication credentials match the initialized Firebase app
+  late final FirebaseDatabase _database;
   late final DatabaseReference _databaseRef;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  // Get the database URL (for logging/debugging)
+  String get databaseURL => _database.databaseURL ?? 'unknown';
   
   FirebaseService() {
     try {
-      // Create a Firebase Database instance pointing to gametibe2025 project
-      final database = FirebaseDatabase.instanceFor(
-        app: FirebaseDatabase.instance.app,
-        databaseURL: _databaseURL,
-      );
-      _databaseRef = database.ref();
-      print('Firebase Database initialized with URL: $_databaseURL');
+      // Use the default Firebase Database instance
+      // This matches the project configured in google-services.json (gamebridge-ec7cd)
+      _database = FirebaseDatabase.instance;
+      _databaseRef = _database.ref();
+      print('Firebase Database initialized with URL: ${_database.databaseURL}');
     } catch (e) {
       print('Error initializing Firebase Database: $e');
-      // Fallback to default instance
-      _databaseRef = FirebaseDatabase.instance.ref();
-      print('Using default Firebase Database instance');
+      rethrow;
     }
   }
+  
+  // Get current user ID
+  String? get currentUserId => _auth.currentUser?.uid;
+  
+  // Check if user is authenticated
+  bool get isAuthenticated => _auth.currentUser != null;
 
   // Fetch all courses from Firebase Realtime Database
   Future<List<Course>> fetchCourses() async {
     try {
-      print('Attempting to fetch courses from: $_databaseURL/Gamebridge_courses');
+      print('Attempting to fetch courses from: ${_database.databaseURL}/Gamebridge_courses');
       
       // Add timeout to prevent hanging
       final snapshot = await _databaseRef
@@ -39,7 +45,7 @@ class FirebaseService {
             const Duration(seconds: 15),
             onTimeout: () {
               print('Firebase fetch timeout after 15 seconds');
-              print('Database URL: $_databaseURL');
+              print('Database URL: ${_database.databaseURL}');
               print('Path: Gamebridge_courses');
               throw TimeoutException('Firebase connection timeout');
             },
@@ -87,7 +93,7 @@ class FirebaseService {
       print('Error fetching courses from Firebase: $e');
       print('Error type: ${e.runtimeType}');
       print('Stack trace: $stackTrace');
-      print('Database URL: $_databaseURL');
+      print('Database URL: ${_database.databaseURL}');
       print('Make sure Firebase Realtime Database is enabled and accessible');
       print('Check database rules allow reading Gamebridge_courses');
       return [];
@@ -116,6 +122,118 @@ class FirebaseService {
         return <Course>[];
       }
     });
+  }
+
+  // Add a course to user's favorites
+  Future<void> addToFavorites(String courseId) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User must be authenticated to add favorites');
+    }
+    
+    try {
+      await _databaseRef
+          .child('user_favorites')
+          .child(userId)
+          .child(courseId)
+          .set({
+        'courseId': courseId,
+        'addedAt': ServerValue.timestamp,
+      });
+      print('Added course $courseId to favorites for user $userId');
+    } catch (e) {
+      print('Error adding to favorites: $e');
+      rethrow;
+    }
+  }
+
+  // Remove a course from user's favorites
+  Future<void> removeFromFavorites(String courseId) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User must be authenticated to remove favorites');
+    }
+    
+    try {
+      await _databaseRef
+          .child('user_favorites')
+          .child(userId)
+          .child(courseId)
+          .remove();
+      print('Removed course $courseId from favorites for user $userId');
+    } catch (e) {
+      print('Error removing from favorites: $e');
+      rethrow;
+    }
+  }
+
+  // Fetch all favorite course IDs for current user
+  Future<List<String>> fetchFavoriteIds() async {
+    final userId = currentUserId;
+    if (userId == null) {
+      return [];
+    }
+    
+    try {
+      final snapshot = await _databaseRef
+          .child('user_favorites')
+          .child(userId)
+          .get();
+      
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final favoriteIds = data.keys.map((key) => key.toString()).toList();
+        print('Fetched ${favoriteIds.length} favorites for user $userId');
+        return favoriteIds;
+      } else {
+        print('No favorites found for user $userId');
+        return [];
+      }
+    } catch (e) {
+      print('Error fetching favorites: $e');
+      return [];
+    }
+  }
+
+  // Stream favorite course IDs for real-time updates
+  Stream<List<String>> streamFavoriteIds() {
+    final userId = currentUserId;
+    if (userId == null) {
+      return Stream.value([]);
+    }
+    
+    return _databaseRef
+        .child('user_favorites')
+        .child(userId)
+        .onValue
+        .map((event) {
+      if (event.snapshot.exists && event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        return data.keys.map((key) => key.toString()).toList();
+      } else {
+        return <String>[];
+      }
+    });
+  }
+
+  // Check if a course is in favorites
+  Future<bool> isFavorite(String courseId) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      return false;
+    }
+    
+    try {
+      final snapshot = await _databaseRef
+          .child('user_favorites')
+          .child(userId)
+          .child(courseId)
+          .get();
+      return snapshot.exists;
+    } catch (e) {
+      print('Error checking if favorite: $e');
+      return false;
+    }
   }
 }
 

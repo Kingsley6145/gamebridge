@@ -15,6 +15,7 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final FavoritesManager _favoritesManager = FavoritesManager();
   final TextEditingController _searchController = TextEditingController();
+  bool _isLoading = true;
 
   List<Course> get favoriteCourses => _favoritesManager.getFavoriteCourses(allCourses);
 
@@ -36,6 +37,44 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     _searchController.addListener(() {
       setState(() {});
     });
+    
+    // Initialize favorites from Firebase
+    _initializeFavorites();
+    
+    // Listen to favorite changes
+    _favoritesManager.favoritesStream.listen((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+  
+  Future<void> _initializeFavorites() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      if (!_favoritesManager.isInitialized) {
+        await _favoritesManager.initialize();
+      }
+    } catch (e) {
+      print('Error initializing favorites: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading favorites: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -206,7 +245,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                filteredCourses.isEmpty
+                _isLoading
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : filteredCourses.isEmpty
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(40),
@@ -254,10 +300,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           course: course,
                           getIconColor: _getIconColor,
                           getCourseImagePath: _getCourseImagePath,
-                          onRemove: () {
-                            setState(() {
-                              _favoritesManager.removeFavorite(course.id);
-                            });
+                          onRemove: () async {
+                            try {
+                              await _favoritesManager.removeFavorite(course.id);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Removed ${course.title} from favorites'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            }
                           },
                         );
                       },
