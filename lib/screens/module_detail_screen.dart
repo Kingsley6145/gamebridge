@@ -35,16 +35,33 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   Future<void> _initializeVideo() async {
     try {
       // Use video URL from module
-      final videoPath = widget.module.videoUrl;
+      final videoPath = widget.module.videoUrl.trim();
+      
+      debugPrint('Initializing video with path: $videoPath');
+      
+      // Check if video URL is empty
+      if (videoPath.isEmpty) {
+        debugPrint('Video URL is empty');
+        if (mounted) {
+          setState(() {
+            _isVideoError = true;
+          });
+        }
+        return;
+      }
       
       // Check if it's a URL (http/https) or an asset path
       if (videoPath.startsWith('http://') || videoPath.startsWith('https://')) {
+        debugPrint('Loading video from network URL: $videoPath');
         _controller = VideoPlayerController.networkUrl(Uri.parse(videoPath));
       } else {
+        debugPrint('Loading video from asset: $videoPath');
         _controller = VideoPlayerController.asset(videoPath);
       }
 
       await _controller!.initialize();
+      debugPrint('Video initialized successfully');
+      
       // Add listener to update UI when playback state changes
       _controller!.addListener(() {
         if (mounted) {
@@ -56,8 +73,10 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
           _isVideoInitialized = true;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Video initialization error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('Video URL was: ${widget.module.videoUrl}');
       if (mounted) {
         setState(() {
           _isVideoError = true;

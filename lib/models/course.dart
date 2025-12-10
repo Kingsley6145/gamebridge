@@ -29,6 +29,14 @@ class Course {
     required this.questions,
   });
 
+  // Helper function to parse image path (handles empty strings and null)
+  static String? _parseImagePath(String? path) {
+    if (path == null || path.isEmpty || path.trim().isEmpty) {
+      return null;
+    }
+    return path.trim();
+  }
+
   // Factory constructor to create Course from JSON
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
@@ -42,7 +50,11 @@ class Course {
       isTrendy: json['isTrendy'] == true || json['isTrendy'] == 'true',
       isPremium: json['isPremium'] == true || json['isPremium'] == 'true',
       imageColor: json['imageColor']?.toString() ?? 'purple',
-      coverImagePath: json['coverImagePath']?.toString() ?? json['imageUrl']?.toString(),
+      coverImagePath: _parseImagePath(
+        json['coverImagePath']?.toString() ?? 
+        json['coverImage']?.toString() ?? 
+        json['imageUrl']?.toString()
+      ),
       modules: (json['modules'] as List<dynamic>?)
           ?.map((module) => CourseModule.fromJson(Map<String, dynamic>.from(module)))
           .toList() ?? [],
@@ -96,7 +108,7 @@ class CourseModule {
       title: json['title']?.toString() ?? '',
       duration: json['duration']?.toString() ?? '',
       iconColor: json['iconColor']?.toString() ?? 'orange',
-      videoUrl: json['videoUrl']?.toString() ?? '',
+      videoUrl: (json['videoUrl']?.toString() ?? '').trim(),
       markdownDescription: json['markdownDescription']?.toString() ?? '',
     );
   }

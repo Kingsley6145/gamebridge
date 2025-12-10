@@ -58,6 +58,17 @@ class FirebaseService {
             final course = Course.fromJson(Map<String, dynamic>.from(courseData));
             courses.add(course);
             print('Successfully parsed course: ${course.title}');
+            print('  - coverImagePath: ${course.coverImagePath ?? "null"}');
+            print('  - Firebase coverImage: ${courseData['coverImage'] ?? "null"}');
+            print('  - Firebase coverImagePath: ${courseData['coverImagePath'] ?? "null"}');
+            print('  - Firebase imageUrl: ${courseData['imageUrl'] ?? "null"}');
+            // Debug modules and their video URLs
+            if (course.modules.isNotEmpty) {
+              print('  - Modules count: ${course.modules.length}');
+              course.modules.forEach((module) {
+                print('    Module "${module.title}": videoUrl = ${module.videoUrl.isEmpty ? "EMPTY" : module.videoUrl}');
+              });
+            }
           } catch (e) {
             print('Error parsing course $key: $e');
             print('Course data: $value');

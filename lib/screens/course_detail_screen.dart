@@ -53,7 +53,30 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     }
   }
 
-  String _getCourseImagePath(String courseTitle) {
+  String? _getCourseImagePath(String courseTitle) {
+    // Normalize title for matching (case-insensitive, trim whitespace)
+    final normalizedTitle = courseTitle.trim().toLowerCase();
+    
+    // Map course titles to image paths (flexible matching)
+    if (normalizedTitle.contains('ux master') || normalizedTitle.contains('ux course') || normalizedTitle == 'ux master course') {
+      return 'assets/images/ux.png';
+    } else if (normalizedTitle.contains('ui master') || normalizedTitle.contains('ui course') || normalizedTitle == 'ui master course') {
+      return 'assets/images/ui.png';
+    } else if (normalizedTitle.contains('unity') && normalizedTitle.contains('game')) {
+      return 'assets/images/unity.png';
+    } else if (normalizedTitle.contains('3d') || normalizedTitle.contains('grow your 3d')) {
+      return 'assets/images/grow you 3d skills.png';
+    } else if (normalizedTitle.contains('ai') || normalizedTitle.contains('machine learning')) {
+      return 'assets/images/AI and machine learning basics.png';
+    } else if (normalizedTitle.contains('react') || (normalizedTitle.contains('web') && normalizedTitle.contains('development'))) {
+      return 'assets/images/react web development.png';
+    } else if (normalizedTitle.contains('python')) {
+      return 'assets/images/Python Programming Mastery.png';
+    } else if (normalizedTitle.contains('unreal') || normalizedTitle.contains('ue5')) {
+      return 'assets/images/Unreal Engine 5 basics.png';
+    }
+    
+    // Exact matches (for backward compatibility)
     switch (courseTitle) {
       case 'UX Master Course':
         return 'assets/images/ux.png';
@@ -72,7 +95,71 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       case 'Unreal Engine 5 Basics':
         return 'assets/images/Unreal Engine 5 basics.png';
       default:
-        return 'assets/images/ux.png'; // Default fallback
+        return null;
+    }
+  }
+
+  Widget _buildCourseImage(String imagePath, {required double width, required double height}) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _getColorFromString(widget.course.imageColor),
+                  _getColorFromString(widget.course.imageColor).withOpacity(0.7),
+                ],
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.play_circle_filled,
+                color: Colors.white,
+                size: 80,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      return Image.asset(
+        imagePath,
+        width: width,
+        height: height,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _getColorFromString(widget.course.imageColor),
+                  _getColorFromString(widget.course.imageColor).withOpacity(0.7),
+                ],
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.play_circle_filled,
+                color: Colors.white,
+                size: 80,
+              ),
+            ),
+          );
+        },
+      );
     }
   }
 
@@ -215,10 +302,31 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   child: SizedBox(
                     height: 400,
                     width: double.infinity,
-                    child: Image.asset(
-                      _getCourseImagePath(widget.course.title),
-                      fit: BoxFit.contain,
-                    ),
+                    child: (widget.course.coverImagePath ?? _getCourseImagePath(widget.course.title)) != null
+                        ? _buildCourseImage(
+                            widget.course.coverImagePath ?? _getCourseImagePath(widget.course.title)!,
+                            width: double.infinity,
+                            height: 400,
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  _getColorFromString(widget.course.imageColor),
+                                  _getColorFromString(widget.course.imageColor).withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.play_circle_filled,
+                                color: Colors.white,
+                                size: 80,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
               ),
