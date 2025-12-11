@@ -6,14 +6,16 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 class WebViewModal extends StatefulWidget {
-  final String url;
+  final String? url;
+  final String? htmlContent;
   final String title;
 
   const WebViewModal({
     super.key,
-    required this.url,
+    this.url,
+    this.htmlContent,
     required this.title,
-  });
+  }) : assert(url != null || htmlContent != null, 'Either url or htmlContent must be provided');
 
   @override
   State<WebViewModal> createState() => _WebViewModalState();
@@ -63,8 +65,19 @@ class _WebViewModalState extends State<WebViewModal> {
               debugPrint('WebView error: ${error.description}');
             },
           ),
-        )
-        ..loadRequest(Uri.parse(widget.url));
+        );
+
+      // Load either URL or HTML content
+      if (widget.htmlContent != null && widget.htmlContent!.isNotEmpty) {
+        // Load HTML content directly with base URL to enable localStorage
+        await controller.loadHtmlString(
+          widget.htmlContent!,
+          baseUrl: 'https://gametibe2025-default-rtdb.firebaseio.com',
+        );
+      } else if (widget.url != null && widget.url!.isNotEmpty) {
+        // Load URL
+        await controller.loadRequest(Uri.parse(widget.url!));
+      }
 
       if (Platform.isAndroid) {
         final androidController = controller.platform as AndroidWebViewController;
@@ -90,84 +103,48 @@ class _WebViewModalState extends State<WebViewModal> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey[100],
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+          ),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A2A2A) : Colors.grey[100],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+        title: Text(
+          widget.title,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+          ),
+        ),
+        centerTitle: false,
+      ),
+      body: _controller == null
+          ? Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[800] : Colors.grey[200],
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // WebView
-            Expanded(
-              child: _controller == null
-                  ? Center(
+            )
+          : Stack(
+              children: [
+                WebViewWidget(controller: _controller!),
+                if (_isLoading)
+                  Container(
+                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                    child: Center(
                       child: CircularProgressIndicator(
                         color: Theme.of(context).primaryColor,
                       ),
-                    )
-                  : Stack(
-                      children: [
-                        WebViewWidget(controller: _controller!),
-                        if (_isLoading)
-                          Container(
-                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: Theme.of(context).primaryColor,
-                              ),
-                            ),
-                          ),
-                      ],
                     ),
+                  ),
+              ],
             ),
-          ],
-        ),
-      ),
     );
   }
 }

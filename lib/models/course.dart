@@ -91,6 +91,7 @@ class CourseModule {
   final String iconColor; // For play button color
   final String videoUrl; // Video file path or URL
   final String markdownDescription; // Markdown formatted description
+  final String htmlContent; // HTML content for practical activity
 
   CourseModule({
     required this.id,
@@ -99,6 +100,7 @@ class CourseModule {
     required this.iconColor,
     required this.videoUrl,
     required this.markdownDescription,
+    this.htmlContent = '',
   });
 
   // Factory constructor to create CourseModule from JSON
@@ -110,6 +112,7 @@ class CourseModule {
       iconColor: json['iconColor']?.toString() ?? 'orange',
       videoUrl: (json['videoUrl']?.toString() ?? '').trim(),
       markdownDescription: json['markdownDescription']?.toString() ?? '',
+      htmlContent: json['htmlContent']?.toString() ?? '',
     );
   }
 
@@ -122,6 +125,7 @@ class CourseModule {
       'iconColor': iconColor,
       'videoUrl': videoUrl,
       'markdownDescription': markdownDescription,
+      'htmlContent': htmlContent,
     };
   }
 }

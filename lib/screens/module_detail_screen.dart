@@ -332,43 +332,44 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
               const SizedBox(height: 32),
 
-              // Take Quiz Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Open webview modal with quiz URL
-                      // You can customize this URL based on your needs
-                      final quizUrl = 'https://example.com/quiz/${widget.module.id}';
-                      showDialog(
-                        context: context,
-                        builder: (context) => WebViewModal(
-                          url: quizUrl,
-                          title: '${widget.module.title} - Quiz',
+              // Practical Activity Button
+              if (widget.module.htmlContent.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Open webview full screen with HTML content from Firebase
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WebViewModal(
+                              htmlContent: widget.module.htmlContent,
+                              title: '${widget.module.title} - Practical Activity',
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: courseColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: courseColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        elevation: 0,
                       ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'Practical activity',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        'Practical activity',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
               const SizedBox(height: 32),
             ],
