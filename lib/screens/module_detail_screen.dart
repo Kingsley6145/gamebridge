@@ -360,7 +360,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'Take Quiz',
+                      'Practical activity',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

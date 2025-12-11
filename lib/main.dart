@@ -13,14 +13,24 @@ import 'widgets/auth_wrapper.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
+import 'data/firebase_config.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
+  // Initialize default Firebase app (from google-services.json - gamebridge-ec7cd)
   try {
     await Firebase.initializeApp();
+    print('✅ Default Firebase app initialized (gamebridge-ec7cd)');
   } catch (e) {
     print('Firebase initialization error: $e');
+  }
+  
+  // Initialize secondary Firebase app for gametibe2025 database
+  try {
+    await Gametibe2025FirebaseConfig.initializeSecondaryApp();
+  } catch (e) {
+    print('Secondary Firebase app initialization error: $e');
   }
   
   // Register the Android WebView platform implementation

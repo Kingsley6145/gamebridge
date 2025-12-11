@@ -62,16 +62,30 @@ Future<void> _saveCoursesToCache(List<Course> courses) async {
 // Fetch courses from Firebase and update cache
 Future<List<Course>> fetchCoursesFromFirebase() async {
   try {
+    print('🔄 Fetching courses from Firebase...');
     final courses = await _firebaseService.fetchCourses();
+    print('📦 Received ${courses.length} courses from Firebase');
+    
     if (courses.isNotEmpty) {
+      print('✅ Updating cache with ${courses.length} courses');
       _cachedCourses = courses;
       // Update cache with fresh data
       await _saveCoursesToCache(courses);
-      print('Courses updated from Firebase: ${courses.length} courses');
+      print('💾 Cache updated successfully');
+      
+      // Print all course titles for debugging
+      print('📚 Courses in cache:');
+      for (var i = 0; i < courses.length; i++) {
+        print('  ${i + 1}. ${courses[i].title} (ID: ${courses[i].id})');
+      }
+    } else {
+      print('⚠️ WARNING: Firebase returned empty course list');
+      print('   Current cache has ${_cachedCourses.length} courses');
     }
     return _cachedCourses;
-  } catch (e) {
-    print('Error fetching courses: $e');
+  } catch (e, stackTrace) {
+    print('❌ Error fetching courses: $e');
+    print('Stack trace: $stackTrace');
     return _cachedCourses; // Return cached courses if fetch fails
   }
 }
@@ -79,18 +93,48 @@ Future<List<Course>> fetchCoursesFromFirebase() async {
 // Get cached courses (for immediate access)
 List<Course> get allCourses => _cachedCourses;
 
+// Force refresh courses from Firebase (clears cache first)
+Future<List<Course>> forceRefreshCourses() async {
+  try {
+    print('🔄 Force refreshing courses from Firebase...');
+    
+    // Clear cache
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_coursesCacheKey);
+    _cachedCourses = [];
+    print('🗑️ Cache cleared');
+    
+    // Fetch fresh data
+    return await fetchCoursesFromFirebase();
+  } catch (e, stackTrace) {
+    print('❌ Error force refreshing courses: $e');
+    print('Stack trace: $stackTrace');
+    return _cachedCourses;
+  }
+}
+
 // Stream courses for real-time updates (includes cached courses immediately)
 Stream<List<Course>> streamCourses() async* {
   // First emit cached courses immediately (for instant loading)
   if (_cachedCourses.isNotEmpty) {
+    print('📤 Emitting ${_cachedCourses.length} cached courses');
     yield _cachedCourses;
   }
   
   // Then listen to Firebase updates
   yield* _firebaseService.streamCourses().map((courses) {
     if (courses.isNotEmpty) {
+      print('🔄 Stream update: Received ${courses.length} courses from Firebase');
       _cachedCourses = courses;
       _saveCoursesToCache(courses); // Update cache when Firebase data arrives
+      print('✅ Cache updated from stream with ${courses.length} courses');
+      
+      // Print all course titles for debugging
+      for (var i = 0; i < courses.length; i++) {
+        print('  ${i + 1}. ${courses[i].title} (ID: ${courses[i].id})');
+      }
+    } else {
+      print('⚠️ Stream update: Firebase returned empty list, keeping ${_cachedCourses.length} cached courses');
     }
     return _cachedCourses;
   });

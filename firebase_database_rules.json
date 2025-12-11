@@ -1,0 +1,156 @@
+{
+  "rules": {
+    "Gamebridge_courses": {
+      ".read": true,
+      ".write": false
+    },
+    "adminPosts": {
+      ".read": true,
+      ".write": false
+    },
+    "user_favorites": {
+      "$uid": {
+        ".read": true,
+        ".write": true,
+        "$courseId": {
+          ".validate": "newData.hasChildren(['courseId', 'addedAt']) && newData.child('courseId').val() == $courseId"
+        }
+      }
+    },
+    "users": {
+      ".indexOn": [
+        "username",
+        "email",
+        "createdAt",
+        "lastActive",
+        "points",
+        "games"
+      ],
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid",
+        "posts": {
+          ".indexOn": ["createdAt"]
+        },
+        "friends": {
+          ".indexOn": ["addedAt"]
+        }
+      }
+    },
+    "posts": {
+      ".indexOn": [
+        "createdAt",
+        "authorId",
+        "senderId",
+        "category",
+        "isRepost",
+        "originalPostId",
+        "likes",
+        "comments",
+        "repostCount",
+        "clanId"
+      ],
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        "comments": {
+          ".indexOn": ["createdAt", "authorId", "likes"]
+        }
+      }
+    },
+    "clans": {
+      ".indexOn": ["name", "createdAt", "memberCount", "category"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "events": {
+      ".indexOn": ["startDate", "endDate", "category", "status", "createdAt"],
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "transactions": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["checkoutRequestId", "userId", "status"]
+    },
+    "presence": {
+      ".indexOn": ["lastActive"],
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "friends": {
+      ".indexOn": ["addedAt"],
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "userChats": {
+      ".indexOn": ["lastMessageAt", "createdAt"],
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "directMessages": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["createdAt", "lastMessageAt"],
+      "$chatId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "participants": {
+          ".validate": "auth != null && (newData.hasChildren(['uid', 'name']) || newData.hasChildren(['uid', 'name', 'avatar']))"
+        },
+        "messages": {
+          ".indexOn": ["createdAt", "senderId", "timestamp", "sentAt"],
+          "$messageId": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            ".validate": "auth != null && (newData.child('senderId').val() == auth.uid || newData.child('receiverId').val() == auth.uid)"
+          }
+        }
+      }
+    },
+    "chats": {
+      ".indexOn": ["createdAt", "lastMessageAt"],
+      "$chatId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "messages": {
+          ".indexOn": ["createdAt", "senderId"],
+          "$messageId": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          }
+        }
+      }
+    },
+    "secureChallenges": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["challengerId", "challengedId", "status", "createdAt"]
+    },
+    "notifications": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null"
+      }
+    },
+    "groupChallenges": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["createdAt", "status"]
+    },
+    "challenges": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["challengerId", "challengedId", "status", "createdAt"]
+    }
+  }
+}
+
