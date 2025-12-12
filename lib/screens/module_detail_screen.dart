@@ -6,6 +6,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/course.dart';
 import '../widgets/enhanced_video_player.dart';
 import '../widgets/webview_modal.dart';
+import '../data/firebase_service.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final CourseModule module;
@@ -25,11 +26,47 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
   VideoPlayerController? _controller;
   bool _isVideoInitialized = false;
   bool _isVideoError = false;
+  final FirebaseService _firebaseService = FirebaseService();
+  bool _isCompleted = false;
+  Map<String, dynamic>? _activityScore;
+  bool _isLoadingCompletion = true;
 
   @override
   void initState() {
     super.initState();
     _initializeVideo();
+    _checkCompletionStatus();
+  }
+
+  Future<void> _checkCompletionStatus() async {
+    try {
+      // Get the activity score first (this will exist for any score, not just passed)
+      final score = await _firebaseService.getActivityScore(
+        widget.course.id,
+        widget.module.id,
+      );
+      
+      // Check if completed (only true if passed)
+      final isCompleted = await _firebaseService.isModuleCompleted(
+        widget.course.id,
+        widget.module.id,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _isCompleted = isCompleted;
+          _activityScore = score; // Show score regardless of pass/fail
+          _isLoadingCompletion = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking completion status: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingCompletion = false;
+        });
+      }
+    }
   }
 
   Future<void> _initializeVideo() async {
@@ -166,16 +203,49 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
 
               const SizedBox(height: 4),
 
-              // Module Title
+              // Module Title with Completion Badge
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  widget.module.title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.module.title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                    if (_isCompleted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Completed',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
 
@@ -336,37 +406,164 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> {
               if (widget.module.htmlContent.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Open webview full screen with HTML content from Firebase
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WebViewModal(
-                              htmlContent: widget.module.htmlContent,
-                              title: '${widget.module.title} - Practical Activity',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            // Open webview full screen with HTML content from Firebase
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WebViewModal(
+                                  htmlContent: widget.module.htmlContent,
+                                  title: '${widget.module.title} - Practical Activity',
+                                  courseId: widget.course.id,
+                                  moduleId: widget.module.id,
+                                  onMessageReceived: (data) {
+                                    // Refresh completion status immediately when message is received
+                                    Future.delayed(const Duration(milliseconds: 500), () {
+                                      _checkCompletionStatus();
+                                    });
+                                  },
+                                ),
+                              ),
+                            );
+                            
+                            // Always refresh completion status when returning from activity
+                            // Add a small delay to ensure Firebase has saved the data
+                            await Future.delayed(const Duration(milliseconds: 300));
+                            _checkCompletionStatus();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isCompleted 
+                                ? Colors.green 
+                                : courseColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          icon: Icon(
+                            _isCompleted ? Icons.check_circle : Icons.play_arrow,
+                            size: 20,
+                          ),
+                          label: Text(
+                            _isCompleted 
+                                ? 'Practical Activity (Completed)' 
+                                : 'Practical Activity',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: courseColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Practical activity',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (_activityScore != null && _activityScore!['score'] < 100)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'You can retake this activity to improve your score',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 32),
+
+              // Show score if any score exists (regardless of pass/fail)
+              if (_activityScore != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _isCompleted 
+                          ? (isDark ? Colors.green[900]?.withOpacity(0.2) : Colors.green[50])
+                          : (isDark ? Colors.orange[900]?.withOpacity(0.2) : Colors.orange[50]),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _isCompleted 
+                            ? Colors.green.withOpacity(0.3)
+                            : Colors.orange.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isCompleted ? Icons.emoji_events : Icons.assessment,
+                          color: _isCompleted 
+                              ? Colors.green[700]
+                              : Colors.orange[700],
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Your Score',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: _isCompleted
+                                      ? (isDark ? Colors.green[300] : Colors.green[700])
+                                      : (isDark ? Colors.orange[300] : Colors.orange[700]),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${_activityScore!['score']}%',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isCompleted
+                                      ? (isDark ? Colors.green[300] : Colors.green[700])
+                                      : (isDark ? Colors.orange[300] : Colors.orange[700]),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_activityScore!['pointsAwarded'] != null && _activityScore!['pointsAwarded'] > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: courseColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.stars,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '+${_activityScore!['pointsAwarded']}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

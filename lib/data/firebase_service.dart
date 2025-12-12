@@ -447,5 +447,212 @@ class FirebaseService {
       return false;
     }
   }
+
+  // ==================== USER PROGRESS & ACTIVITY SCORES ====================
+
+  /// Save activity score for a module
+  /// Returns the points awarded
+  Future<int> saveActivityScore({
+    required String courseId,
+    required String moduleId,
+    required int score,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User must be authenticated to save scores');
+    }
+
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final isPassed = score >= 70; // Passing threshold
+      
+      // Calculate points: base points + bonus for high scores
+      int pointsAwarded = 0;
+      if (isPassed) {
+        pointsAwarded = 10; // Base points for passing
+        if (score >= 90) {
+          pointsAwarded = 20; // Bonus for excellent score
+        } else if (score >= 80) {
+          pointsAwarded = 15; // Bonus for good score
+        }
+      }
+
+      // Save activity score
+      final activityData = {
+        'score': score,
+        'maxScore': 100,
+        'isPassed': isPassed,
+        'pointsAwarded': pointsAwarded,
+        'completedAt': timestamp,
+        'courseId': courseId,
+        'moduleId': moduleId,
+        ...?additionalData,
+      };
+
+      await _databaseRef
+          .child('user_progress')
+          .child(userId)
+          .child('activities')
+          .child(courseId)
+          .child(moduleId)
+          .set(activityData);
+
+      // Update user's total points
+      if (pointsAwarded > 0) {
+        await _awardPoints(pointsAwarded);
+      }
+
+      // Mark module as completed if passed
+      if (isPassed) {
+        await _markModuleCompleted(userId, courseId, moduleId, timestamp);
+      }
+
+      print('✅ Saved activity score: $score for module $moduleId (Points: $pointsAwarded)');
+      return pointsAwarded;
+    } catch (e) {
+      print('❌ Error saving activity score: $e');
+      rethrow;
+    }
+  }
+
+  /// Get activity score for a module
+  Future<Map<String, dynamic>?> getActivityScore(String courseId, String moduleId) async {
+    final userId = currentUserId;
+    if (userId == null) return null;
+
+    try {
+      final snapshot = await _databaseRef
+          .child('user_progress')
+          .child(userId)
+          .child('activities')
+          .child(courseId)
+          .child(moduleId)
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        return Map<String, dynamic>.from(snapshot.value as Map);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting activity score: $e');
+      return null;
+    }
+  }
+
+  /// Check if a module is completed
+  Future<bool> isModuleCompleted(String courseId, String moduleId) async {
+    final score = await getActivityScore(courseId, moduleId);
+    return score != null && (score['isPassed'] == true);
+  }
+
+  /// Get all completed modules for a course
+  Future<List<String>> getCompletedModules(String courseId) async {
+    final userId = currentUserId;
+    if (userId == null) return [];
+
+    try {
+      final snapshot = await _databaseRef
+          .child('user_progress')
+          .child(userId)
+          .child('completed_modules')
+          .child(courseId)
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        return data.keys.map((key) => key.toString()).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting completed modules: $e');
+      return [];
+    }
+  }
+
+  /// Get course completion percentage
+  Future<double> getCourseCompletionPercentage(String courseId, int totalModules) async {
+    if (totalModules == 0) return 0.0;
+    final completed = await getCompletedModules(courseId);
+    return (completed.length / totalModules) * 100;
+  }
+
+  /// Mark module as completed
+  Future<void> _markModuleCompleted(String userId, String courseId, String moduleId, int timestamp) async {
+    await _databaseRef
+        .child('user_progress')
+        .child(userId)
+        .child('completed_modules')
+        .child(courseId)
+        .child(moduleId)
+        .set({
+      'completedAt': timestamp,
+      'courseId': courseId,
+    });
+  }
+
+  /// Award points to user
+  Future<void> _awardPoints(int points) async {
+    final userId = currentUserId;
+    if (userId == null) return;
+
+    try {
+      final userRef = _databaseRef.child('users').child(userId);
+      
+      // Get current points
+      final snapshot = await userRef.child('points').get();
+      final currentPoints = (snapshot.exists && snapshot.value != null)
+          ? (snapshot.value as num).toInt()
+          : 0;
+
+      // Update points
+      await userRef.child('points').set(currentPoints + points);
+      print('✅ Awarded $points points. Total: ${currentPoints + points}');
+    } catch (e) {
+      print('Error awarding points: $e');
+    }
+  }
+
+  /// Get user's total points
+  Future<int> getUserPoints() async {
+    final userId = currentUserId;
+    if (userId == null) return 0;
+
+    try {
+      final snapshot = await _databaseRef
+          .child('users')
+          .child(userId)
+          .child('points')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        return (snapshot.value as num).toInt();
+      }
+      return 0;
+    } catch (e) {
+      print('Error getting user points: $e');
+      return 0;
+    }
+  }
+
+  /// Stream user points for real-time updates
+  Stream<int> streamUserPoints() {
+    final userId = currentUserId;
+    if (userId == null) {
+      return Stream.value(0);
+    }
+
+    return _databaseRef
+        .child('users')
+        .child(userId)
+        .child('points')
+        .onValue
+        .map((event) {
+      if (event.snapshot.exists && event.snapshot.value != null) {
+        return (event.snapshot.value as num).toInt();
+      }
+      return 0;
+    });
+  }
 }
 

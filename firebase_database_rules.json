@@ -2,7 +2,11 @@
   "rules": {
     "Gamebridge_courses": {
       ".read": true,
-      ".write": false
+      ".write": "auth != null",
+      "$courseId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
     },
     "adminPosts": {
       ".read": true,
@@ -14,6 +18,38 @@
         ".write": true,
         "$courseId": {
           ".validate": "newData.hasChildren(['courseId', 'addedAt']) && newData.child('courseId').val() == $courseId"
+        }
+      }
+    },
+    "user_progress": {
+      "$uid": {
+        ".read": true,
+        ".write": true,
+        "activities": {
+          ".read": true,
+          ".write": true,
+          "$courseId": {
+            ".read": true,
+            ".write": true,
+            "$moduleId": {
+              ".read": true,
+              ".write": true,
+              ".validate": "newData.hasChildren(['score', 'isPassed', 'completedAt', 'courseId', 'moduleId']) && newData.child('courseId').val() == $courseId && newData.child('moduleId').val() == $moduleId"
+            }
+          }
+        },
+        "completed_modules": {
+          ".read": true,
+          ".write": true,
+          "$courseId": {
+            ".read": true,
+            ".write": true,
+            "$moduleId": {
+              ".read": true,
+              ".write": true,
+              ".validate": "newData.hasChildren(['completedAt', 'courseId']) && newData.child('courseId').val() == $courseId"
+            }
+          }
         }
       }
     },
@@ -29,6 +65,9 @@
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && auth.uid == $uid",
+        "points": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
         "posts": {
           ".indexOn": ["createdAt"]
         },

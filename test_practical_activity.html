@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practical Activity Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .quiz-section {
+            margin-bottom: 30px;
+        }
+
+        .question {
+            background: #f8f9fa;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .question.completed {
+            border-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        .question h3 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+
+        .question-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 14px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 15px;
+        }
+
+        .option:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f0f0ff;
+            transform: translateX(4px);
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #4caf50;
+            color: white;
+        }
+
+        .option.wrong {
+            border-color: #f44336;
+            background: #f44336;
+            color: white;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        button {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .result {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 2px solid #4caf50;
+        }
+
+        .result.info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+            border: 2px solid #17a2b8;
+        }
+
+        .score-display {
+            text-align: center;
+            margin: 24px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            color: white;
+            display: none;
+        }
+
+        .score-display.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .score-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+
+        .score-label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .points-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Practical Activity Test</h1>
+        <p class="subtitle">Complete the quiz to test postMessage communication with Flutter</p>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <div class="quiz-section">
+            <div class="question" id="question1">
+                <span class="question-number">Question 1 of 5</span>
+                <h3>What is Flutter primarily used for?</h3>
+                <div class="options">
+                    <div class="option" data-correct="true" onclick="selectOption(this, 'question1', true)">A) Building cross-platform mobile and web applications</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question1', false)">B) Server-side programming</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question1', false)">C) Database management</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question1', false)">D) Video game development</div>
+                </div>
+            </div>
+
+            <div class="question" id="question2">
+                <span class="question-number">Question 2 of 5</span>
+                <h3>What programming language does Flutter use?</h3>
+                <div class="options">
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question2', false)">A) JavaScript</div>
+                    <div class="option" data-correct="true" onclick="selectOption(this, 'question2', true)">B) Dart</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question2', false)">C) Python</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question2', false)">D) Java</div>
+                </div>
+            </div>
+
+            <div class="question" id="question3">
+                <span class="question-number">Question 3 of 5</span>
+                <h3>Which company developed Flutter?</h3>
+                <div class="options">
+                    <div class="option" data-correct="true" onclick="selectOption(this, 'question3', true)">A) Google</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question3', false)">B) Microsoft</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question3', false)">C) Apple</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question3', false)">D) Facebook</div>
+                </div>
+            </div>
+
+            <div class="question" id="question4">
+                <span class="question-number">Question 4 of 5</span>
+                <h3>What is the minimum score required to pass this activity?</h3>
+                <div class="options">
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question4', false)">A) 50%</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question4', false)">B) 60%</div>
+                    <div class="option" data-correct="true" onclick="selectOption(this, 'question4', true)">C) 70%</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question4', false)">D) 80%</div>
+                </div>
+            </div>
+
+            <div class="question" id="question5">
+                <span class="question-number">Question 5 of 5</span>
+                <h3>Can Flutter be used to build web applications?</h3>
+                <div class="options">
+                    <div class="option" data-correct="true" onclick="selectOption(this, 'question5', true)">A) Yes, Flutter supports web, mobile, and desktop</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question5', false)">B) No, only mobile apps</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question5', false)">C) Only iOS and Android</div>
+                    <div class="option" data-correct="false" onclick="selectOption(this, 'question5', false)">D) Only desktop applications</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" id="submitBtn" onclick="submitQuiz()" disabled>
+                <span>✓</span>
+                <span>Submit Quiz</span>
+            </button>
+            <button class="btn-secondary" onclick="resetQuiz()">
+                <span>↻</span>
+                <span>Reset</span>
+            </button>
+        </div>
+
+        <div class="score-display" id="scoreDisplay">
+            <div class="score-label">Your Score</div>
+            <div class="score-value" id="scoreValue">0%</div>
+            <div class="points-badge" id="pointsBadge" style="display: none;">
+                🎉 +<span id="pointsValue">0</span> Points Earned!
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="correctStat">0</div>
+                    <div class="stat-label">Correct</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalStat">5</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="percentageStat">0%</div>
+                    <div class="stat-label">Percentage</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let selectedAnswers = {};
+        let correctAnswers = 0;
+        let totalQuestions = 5;
+        let quizSubmitted = false;
+
+        function selectOption(element, questionId, isCorrect) {
+            if (quizSubmitted) return;
+
+            const question = document.getElementById(questionId);
+            
+            // Remove previous selection in this question
+            question.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Mark this option as selected
+            element.classList.add('selected');
+            selectedAnswers[questionId] = isCorrect;
+            
+            // Mark question as completed
+            question.classList.add('completed');
+            
+            // Update progress bar
+            updateProgress();
+            
+            // Enable submit button if all questions answered
+            checkSubmitButton();
+        }
+
+        function updateProgress() {
+            const answered = Object.keys(selectedAnswers).length;
+            const progress = (answered / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function checkSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            if (Object.keys(selectedAnswers).length === totalQuestions) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        function submitQuiz() {
+            if (quizSubmitted) return;
+            
+            // Count correct answers
+            correctAnswers = 0;
+            Object.values(selectedAnswers).forEach(isCorrect => {
+                if (isCorrect) correctAnswers++;
+            });
+
+            // Calculate score
+            const score = Math.round((correctAnswers / totalQuestions) * 100);
+            const passed = score >= 70;
+
+            // Calculate points (matching Flutter implementation)
+            let pointsAwarded = 0;
+            if (passed) {
+                if (score >= 90) {
+                    pointsAwarded = 20; // Excellent
+                } else if (score >= 80) {
+                    pointsAwarded = 15; // Good
+                } else {
+                    pointsAwarded = 10; // Pass
+                }
+            }
+
+            // Show visual feedback
+            showResult(score, correctAnswers, totalQuestions, passed, pointsAwarded);
+
+            // Disable all options
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.add('disabled');
+            });
+            quizSubmitted = true;
+            document.getElementById('submitBtn').disabled = true;
+
+            // Send message to Flutter (matching expected format)
+            sendMessageToFlutter({
+                type: 'quiz_complete',
+                score: score,
+                correctAnswers: correctAnswers,
+                totalQuestions: totalQuestions,
+                passed: passed,
+                pointsAwarded: pointsAwarded,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function showResult(score, correct, total, passed, points) {
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const result = document.getElementById('result');
+            
+            // Show score display
+            scoreDisplay.classList.add('show');
+            document.getElementById('scoreValue').textContent = score + '%';
+            document.getElementById('correctStat').textContent = correct;
+            document.getElementById('totalStat').textContent = total;
+            document.getElementById('percentageStat').textContent = score + '%';
+            
+            // Show points if earned
+            if (points > 0) {
+                document.getElementById('pointsBadge').style.display = 'block';
+                document.getElementById('pointsValue').textContent = points;
+            }
+            
+            // Show result message
+            result.classList.add('show');
+            result.classList.remove('success', 'info');
+            
+            if (passed) {
+                result.classList.add('success');
+                result.innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 8px;">🎉</div>
+                    <div style="font-size: 18px; margin-bottom: 4px;">Congratulations! You passed!</div>
+                    <div style="font-size: 14px; opacity: 0.8;">Your score has been saved to Firebase</div>
+                `;
+            } else {
+                result.classList.add('info');
+                result.innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 8px;">📚</div>
+                    <div style="font-size: 18px; margin-bottom: 4px;">Keep practicing!</div>
+                    <div style="font-size: 14px; opacity: 0.8;">You need 70% to pass. Try again!</div>
+                `;
+            }
+
+            // Highlight correct/incorrect answers
+            document.querySelectorAll('.question').forEach(question => {
+                const options = question.querySelectorAll('.option');
+                options.forEach(option => {
+                    const isCorrect = option.dataset.correct === 'true';
+                    const isSelected = option.classList.contains('selected');
+                    
+                    if (isSelected && isCorrect) {
+                        option.classList.add('correct');
+                    } else if (isSelected && !isCorrect) {
+                        option.classList.add('wrong');
+                    } else if (isCorrect) {
+                        option.classList.add('correct');
+                    }
+                });
+            });
+        }
+
+        function resetQuiz() {
+            selectedAnswers = {};
+            correctAnswers = 0;
+            quizSubmitted = false;
+            
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'wrong', 'disabled');
+            });
+            
+            document.querySelectorAll('.question').forEach(q => {
+                q.classList.remove('completed');
+            });
+            
+            document.getElementById('scoreDisplay').classList.remove('show');
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('progressBar').style.width = '0%';
+            
+            checkSubmitButton();
+        }
+
+        function sendMessageToFlutter(data) {
+            console.log('📤 Sending message to Flutter:', data);
+            
+            // Method 1: Using window.postMessage (will be intercepted by injected script)
+            try {
+                window.postMessage(data, '*');
+                console.log('✅ Message sent via window.postMessage');
+            } catch (e) {
+                console.error('❌ Error with window.postMessage:', e);
+            }
+            
+            // Method 2: Directly calling Flutter channel (backup method)
+            if (window.FlutterMessageHandler) {
+                try {
+                    window.FlutterMessageHandler.postMessage(JSON.stringify(data));
+                    console.log('✅ Message sent via FlutterMessageHandler');
+                } catch (e) {
+                    console.error('❌ Error sending message via FlutterMessageHandler:', e);
+                }
+            } else {
+                console.warn('⚠️ FlutterMessageHandler not available yet');
+            }
+        }
+
+        // Listen for messages (optional - for two-way communication)
+        window.addEventListener('message', function(event) {
+            console.log('📥 Message received in HTML:', event.data);
+        });
+
+        // Initialize
+        checkSubmitButton();
+    </script>
+</body>
+</html>
+

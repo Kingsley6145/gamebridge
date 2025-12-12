@@ -11,7 +11,10 @@ class CategoriesScreen extends StatefulWidget {
   State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
+class _CategoriesScreenState extends State<CategoriesScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   String? selectedCategory;
   String? selectedDifficulty;
   String? selectedDuration;
@@ -37,6 +40,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final filteredCourses = getFilteredCourses();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;

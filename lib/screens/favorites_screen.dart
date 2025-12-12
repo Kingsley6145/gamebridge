@@ -12,7 +12,10 @@ class FavoritesScreen extends StatefulWidget {
   State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final FavoritesManager _favoritesManager = FavoritesManager();
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = true;
@@ -158,6 +161,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     // Refresh when screen becomes visible
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {

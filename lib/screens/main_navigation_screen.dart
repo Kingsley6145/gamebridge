@@ -23,21 +23,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final FavoritesManager _favoritesManager = FavoritesManager();
   final AuthService _authService = AuthService();
 
+  // Cache all screens to prevent rebuilding when switching tabs
+  // These screens are created once and kept in memory using IndexedStack
+  late final List<Widget> _screens = [
+    const HomeContent(),
+    const FavoritesScreen(),
+    const CategoriesScreen(),
+    const SearchScreen(),
+    const ProfileScreen(),
+  ];
+
   Widget _getScreen(int index) {
-    switch (index) {
-      case 0:
-        return const HomeContent();
-      case 1:
-        return const FavoritesScreen();
-      case 2:
-        return const CategoriesScreen();
-      case 3:
-        return const SearchScreen();
-      case 4:
-        return const ProfileScreen();
-      default:
-        return const HomeContent();
-    }
+    return _screens[index];
   }
 
   void _handleScrollNotification(ScrollNotification notification) {
@@ -104,7 +101,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           // Don't process scroll notifications for nav bar hide/show to avoid errors
           return false; // Allow notifications to continue but don't process them
         },
-        child: _getScreen(_currentIndex),
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: ClipRect(
         child: AnimatedContainer(
