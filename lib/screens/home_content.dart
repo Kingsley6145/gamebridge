@@ -111,7 +111,7 @@ class _HomeContentState extends State<HomeContent> with AutomaticKeepAliveClient
                 children: [
                   Expanded(
                     child: Text(
-                      'Learn Online\nFrom Your Home',
+                      'Gamebridge',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -364,7 +364,7 @@ class _HomeContentState extends State<HomeContent> with AutomaticKeepAliveClient
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Learn online from home.',
+                    'Gamebridge',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: theme.brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],

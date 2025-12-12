@@ -654,5 +654,66 @@ class FirebaseService {
       return 0;
     });
   }
+
+  /// Stream all module scores for a course
+  /// Returns a map of moduleId -> score data
+  Stream<Map<String, Map<String, dynamic>>> streamCourseModuleScores(String courseId) {
+    final userId = currentUserId;
+    if (userId == null) {
+      return Stream.value({});
+    }
+
+    return _databaseRef
+        .child('user_progress')
+        .child(userId)
+        .child('activities')
+        .child(courseId)
+        .onValue
+        .map((event) {
+      final Map<String, Map<String, dynamic>> scores = {};
+      
+      if (event.snapshot.exists && event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((moduleId, scoreData) {
+          if (scoreData is Map) {
+            scores[moduleId.toString()] = Map<String, dynamic>.from(scoreData);
+          }
+        });
+      }
+      
+      return scores;
+    });
+  }
+
+  /// Get all module scores for a course (one-time fetch)
+  Future<Map<String, Map<String, dynamic>>> getAllModuleScores(String courseId) async {
+    final userId = currentUserId;
+    if (userId == null) return {};
+
+    try {
+      final snapshot = await _databaseRef
+          .child('user_progress')
+          .child(userId)
+          .child('activities')
+          .child(courseId)
+          .get();
+
+      final Map<String, Map<String, dynamic>> scores = {};
+      
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((moduleId, scoreData) {
+          if (scoreData is Map) {
+            scores[moduleId.toString()] = Map<String, dynamic>.from(scoreData);
+          }
+        });
+      }
+      
+      return scores;
+    } catch (e) {
+      print('Error getting all module scores: $e');
+      return {};
+    }
+  }
 }
 

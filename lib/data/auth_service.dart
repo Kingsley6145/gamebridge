@@ -195,9 +195,10 @@ class AuthService {
       case 'user-disabled':
         return 'This user account has been disabled.';
       case 'user-not-found':
-        return 'No user found for that email.';
       case 'wrong-password':
-        return 'Wrong password provided.';
+      case 'invalid-credential':
+        // For security, don't reveal whether email exists or password is wrong
+        return 'Wrong email or password. Try again.';
       case 'operation-not-allowed':
         return 'This operation is not allowed.';
       case 'too-many-requests':
@@ -205,6 +206,14 @@ class AuthService {
       case 'network-request-failed':
         return 'Network error. Please check your internet connection.';
       default:
+        // Check if the error message indicates credential issues
+        final errorMessage = e.message?.toLowerCase() ?? '';
+        if (errorMessage.contains('credential') && 
+            (errorMessage.contains('incorrect') || 
+             errorMessage.contains('malformed') || 
+             errorMessage.contains('expired'))) {
+          return 'Wrong email or password. Try again.';
+        }
         return e.message ?? 'An authentication error occurred.';
     }
   }

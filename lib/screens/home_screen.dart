@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Learn Online\nFrom Your Home',
+                        'Gamebridge',
                         style: GoogleFonts.poppins(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Learn online from home.',
+                      'Gamebridge',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         color: theme.brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],

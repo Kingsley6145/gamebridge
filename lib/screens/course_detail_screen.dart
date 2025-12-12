@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/course.dart';
 import '../data/favorites_manager.dart';
+import '../data/firebase_service.dart';
 import 'quiz_screen.dart';
 import 'module_detail_screen.dart';
 
@@ -16,7 +18,12 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   final FavoritesManager _favoritesManager = FavoritesManager();
+  final FirebaseService _firebaseService = FirebaseService();
   bool _isLoadingFavorite = false;
+  StreamSubscription<Map<String, Map<String, dynamic>>>? _scoresSubscription;
+  Map<String, Map<String, dynamic>> _moduleScores = {};
+  double _averageScore = 0.0;
+  bool _isQuizUnlocked = false;
 
   bool get isFavorite => _favoritesManager.isFavorite(widget.course.id);
   
@@ -36,6 +43,63 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         setState(() {});
       }
     });
+
+    // Listen to module scores
+    _listenToModuleScores();
+  }
+
+  void _listenToModuleScores() {
+    _scoresSubscription = _firebaseService
+        .streamCourseModuleScores(widget.course.id)
+        .listen((scores) {
+      if (mounted) {
+        setState(() {
+          _moduleScores = scores;
+          _calculateAverageScore();
+        });
+      }
+    }, onError: (error) {
+      print('Error listening to module scores: $error');
+    });
+  }
+
+  void _calculateAverageScore() {
+    if (widget.course.modules.isEmpty) {
+      _averageScore = 0.0;
+      _isQuizUnlocked = false;
+      return;
+    }
+
+    // Check if all modules have scores
+    final modulesWithScores = widget.course.modules.where((module) {
+      return _moduleScores.containsKey(module.id) &&
+          _moduleScores[module.id]?['score'] != null;
+    }).length;
+
+    // Only calculate average if all modules have scores
+    if (modulesWithScores < widget.course.modules.length) {
+      _averageScore = 0.0;
+      _isQuizUnlocked = false;
+      return;
+    }
+
+    // Calculate average score when all modules have scores
+    double totalScore = 0.0;
+    for (var module in widget.course.modules) {
+      final scoreData = _moduleScores[module.id];
+      if (scoreData != null && scoreData['score'] != null) {
+        totalScore += (scoreData['score'] as num).toDouble();
+      }
+    }
+
+    _averageScore = totalScore / widget.course.modules.length;
+    _isQuizUnlocked = _averageScore >= 100.0;
+  }
+
+  @override
+  void dispose() {
+    _scoresSubscription?.cancel();
+    super.dispose();
   }
 
   Color _getColorFromString(String color) {
@@ -350,6 +414,109 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 ),
               ),
 
+              // Course Completion Status
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _isQuizUnlocked
+                          ? Colors.green.withOpacity(0.5)
+                          : courseColor.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _isQuizUnlocked
+                              ? Colors.green.withOpacity(0.2)
+                              : courseColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _isQuizUnlocked ? Icons.check_circle : Icons.trending_up,
+                          color: _isQuizUnlocked ? Colors.green : courseColor,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Course Completion Status',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text(
+                                  _averageScore > 0.0
+                                      ? '${_averageScore.toStringAsFixed(1)}%'
+                                      : '0%',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: _isQuizUnlocked
+                                        ? Colors.green
+                                        : courseColor,
+                                  ),
+                                ),
+                                if (_isQuizUnlocked) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Quiz Available',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ] else if (_averageScore == 0.0 && widget.course.modules.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Complete all modules to see progress',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.grey[500]
+                                          : Colors.grey[600],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 20),
 
               // Course Image Section
@@ -462,52 +629,98 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               if (widget.course.questions.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: courseColor.withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizScreen(course: widget.course),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: _isQuizUnlocked
+                              ? (Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[100])
+                              : (Theme.of(context).brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[200]),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _isQuizUnlocked
+                                ? courseColor.withOpacity(0.3)
+                                : Colors.grey.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _isQuizUnlocked
+                                ? () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => QuizScreen(course: widget.course),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            borderRadius: BorderRadius.circular(16),
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _isQuizUnlocked ? Icons.quiz : Icons.lock,
+                                    color: _isQuizUnlocked
+                                        ? courseColor
+                                        : Colors.grey,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _isQuizUnlocked
+                                        ? 'Take Quiz (${widget.course.questions.length} questions)'
+                                        : 'Quiz Locked',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: _isQuizUnlocked
+                                          ? courseColor
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.quiz,
-                                color: courseColor,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Take Quiz (${widget.course.questions.length} questions)',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: courseColor,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ),
-                    ),
+                      if (!_isQuizUnlocked) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.course.modules.isEmpty
+                              ? 'Complete all modules with 100% to unlock quiz'
+                              : 'Complete all ${widget.course.modules.length} modules with 100% average to unlock quiz',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[400]
+                                : Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (_averageScore > 0.0) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Current average: ${_averageScore.toStringAsFixed(1)}%',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
+                    ],
                   ),
                 ),
 

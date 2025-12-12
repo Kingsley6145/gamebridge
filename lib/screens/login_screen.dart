@@ -68,6 +68,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         String errorMessage = e.toString();
         
+        // Clean up error message - remove "Exception: " prefix if present
+        if (errorMessage.contains('Exception: ')) {
+          errorMessage = errorMessage.replaceAll('Exception: ', '');
+        }
+        
         // Don't show type casting errors to user - they're internal issues
         if (errorMessage.contains('is not a subtype') || 
             errorMessage.contains('PigeonUserDetails') ||
@@ -79,13 +84,22 @@ class _LoginScreenState extends State<LoginScreen> {
             // User is signed in, don't show error
             return;
           }
-          errorMessage = 'Sign in failed. Please try again.';
+          errorMessage = 'Wrong email or password. Try again.';
         }
         
+        // Show error message in a SnackBar (popup)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Text(
+              errorMessage,
+              style: GoogleFonts.poppins(),
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         );
       }
