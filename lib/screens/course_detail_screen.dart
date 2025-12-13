@@ -24,6 +24,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Map<String, Map<String, dynamic>> _moduleScores = {};
   double _averageScore = 0.0;
   bool _isQuizUnlocked = false;
+  bool _quizUnlockNotificationSent = false;
 
   bool get isFavorite => _favoritesManager.isFavorite(widget.course.id);
   
@@ -64,6 +65,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   void _calculateAverageScore() {
+    final previousQuizUnlocked = _isQuizUnlocked;
+    
     if (widget.course.modules.isEmpty) {
       _averageScore = 0.0;
       _isQuizUnlocked = false;
@@ -94,6 +97,32 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
     _averageScore = totalScore / widget.course.modules.length;
     _isQuizUnlocked = _averageScore >= 100.0;
+    
+    // Create notification when quiz becomes unlocked (was locked, now unlocked)
+    if (!previousQuizUnlocked && _isQuizUnlocked && !_quizUnlockNotificationSent) {
+      _createQuizUnlockNotification();
+    }
+  }
+
+  Future<void> _createQuizUnlockNotification() async {
+    if (_quizUnlockNotificationSent) return;
+    
+    try {
+      await _firebaseService.createNotification(
+        title: 'Quiz Unlocked! 🎉',
+        message: 'Congratulations! You\'ve completed "${widget.course.title}" with 100%! The quiz is now available.',
+        type: 'quizOpened',
+        metadata: {
+          'courseId': widget.course.id,
+          'courseTitle': widget.course.title,
+          'averageScore': _averageScore,
+        },
+      );
+      _quizUnlockNotificationSent = true;
+      debugPrint('✅ Quiz unlock notification created for course: ${widget.course.title}');
+    } catch (e) {
+      debugPrint('❌ Error creating quiz unlock notification: $e');
+    }
   }
 
   @override

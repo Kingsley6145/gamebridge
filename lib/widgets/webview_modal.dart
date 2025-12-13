@@ -197,9 +197,31 @@ class _WebViewModalState extends State<WebViewModal> {
               },
             );
             
+            // Create notification if module is completed with passmark
+            final passed = score >= 70;
+            if (passed) {
+              try {
+                // Extract module title from widget.title (format: "Module Title - Practical Activity")
+                final moduleTitle = widget.title.replaceAll(' - Practical Activity', '').trim();
+                
+                await _firebaseService.createNotification(
+                  title: 'Module Completed! 🎉',
+                  message: 'You completed "$moduleTitle" with a score of $score%!',
+                  type: 'moduleCompleted',
+                  metadata: {
+                    'courseId': widget.courseId,
+                    'moduleId': widget.moduleId,
+                    'score': score,
+                    'pointsAwarded': pointsAwarded,
+                  },
+                );
+              } catch (e) {
+                debugPrint('Error creating notification: $e');
+              }
+            }
+            
             // Show success message with points
             if (mounted) {
-              final passed = score >= 70;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Column(

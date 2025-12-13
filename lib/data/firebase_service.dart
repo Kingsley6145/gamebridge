@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/course.dart';
+import '../models/notification.dart';
 import 'firebase_config.dart';
 
 class FirebaseService {
@@ -714,6 +715,256 @@ class FirebaseService {
       print('Error getting all module scores: $e');
       return {};
     }
+  }
+
+  // ==================== NOTIFICATIONS ====================
+
+  /// Create a new notification for the current user
+  Future<void> createNotification({
+    required String title,
+    required String message,
+    required String type,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User must be authenticated to create notifications');
+    }
+
+    try {
+      final notificationId = _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .push()
+          .key!;
+      
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      
+      await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .child(notificationId)
+          .set({
+        'id': notificationId,
+        'title': title,
+        'message': message,
+        'type': type,
+        'createdAt': timestamp,
+        'isRead': false,
+        'metadata': metadata,
+      });
+
+      print('✅ Created notification: $title');
+    } catch (e) {
+      print('❌ Error creating notification: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch all notifications for the current user
+  Future<List<AppNotification>> fetchNotifications() async {
+    final userId = currentUserId;
+    if (userId == null) return [];
+
+    try {
+      final snapshot = await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .orderByChild('createdAt')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final List<AppNotification> notifications = [];
+        
+        data.forEach((key, value) {
+          try {
+            final notificationData = Map<String, dynamic>.from(value as Map);
+            final notification = AppNotification.fromJson(notificationData);
+            notifications.add(notification);
+          } catch (e) {
+            print('Error parsing notification $key: $e');
+          }
+        });
+
+        // Sort by createdAt descending (newest first)
+        notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return notifications;
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching notifications: $e');
+      return [];
+    }
+  }
+
+  /// Stream notifications for real-time updates
+  Stream<List<AppNotification>> streamNotifications() {
+    final userId = currentUserId;
+    if (userId == null) {
+      return Stream.value([]);
+    }
+
+    return _databaseRef
+        .child('Gamebridge_notifications')
+        .child(userId)
+        .orderByChild('createdAt')
+        .onValue
+        .map((event) {
+      final List<AppNotification> notifications = [];
+      
+      if (event.snapshot.exists && event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          try {
+            final notificationData = Map<String, dynamic>.from(value as Map);
+            final notification = AppNotification.fromJson(notificationData);
+            notifications.add(notification);
+          } catch (e) {
+            print('Error parsing notification $key: $e');
+          }
+        });
+      }
+
+      // Sort by createdAt descending (newest first)
+      notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return notifications;
+    });
+  }
+
+  /// Mark a notification as read
+  Future<void> markNotificationAsRead(String notificationId) async {
+    final userId = currentUserId;
+    if (userId == null) return;
+
+    try {
+      await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .child(notificationId)
+          .update({'isRead': true});
+    } catch (e) {
+      print('Error marking notification as read: $e');
+    }
+  }
+
+  /// Mark all notifications as read
+  Future<void> markAllNotificationsAsRead() async {
+    final userId = currentUserId;
+    if (userId == null) return;
+
+    try {
+      final snapshot = await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final updates = <String, dynamic>{};
+        
+        data.forEach((key, value) {
+          updates['$key/isRead'] = true;
+        });
+
+        await _databaseRef
+            .child('Gamebridge_notifications')
+            .child(userId)
+            .update(updates);
+      }
+    } catch (e) {
+      print('Error marking all notifications as read: $e');
+    }
+  }
+
+  /// Delete a notification
+  Future<void> deleteNotification(String notificationId) async {
+    final userId = currentUserId;
+    if (userId == null) return;
+
+    try {
+      await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .child(notificationId)
+          .remove();
+    } catch (e) {
+      print('Error deleting notification: $e');
+    }
+  }
+
+  /// Delete all notifications
+  Future<void> deleteAllNotifications() async {
+    final userId = currentUserId;
+    if (userId == null) return;
+
+    try {
+      await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .remove();
+    } catch (e) {
+      print('Error deleting all notifications: $e');
+    }
+  }
+
+  /// Get unread notification count
+  Future<int> getUnreadNotificationCount() async {
+    final userId = currentUserId;
+    if (userId == null) return 0;
+
+    try {
+      final snapshot = await _databaseRef
+          .child('Gamebridge_notifications')
+          .child(userId)
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        int count = 0;
+        
+        data.forEach((key, value) {
+          if (value is Map) {
+            final isRead = value['isRead'] == true || value['isRead'] == 'true';
+            if (!isRead) count++;
+          }
+        });
+        
+        return count;
+      }
+      return 0;
+    } catch (e) {
+      print('Error getting unread notification count: $e');
+      return 0;
+    }
+  }
+
+  /// Stream unread notification count
+  Stream<int> streamUnreadNotificationCount() {
+    final userId = currentUserId;
+    if (userId == null) {
+      return Stream.value(0);
+    }
+
+    return _databaseRef
+        .child('Gamebridge_notifications')
+        .child(userId)
+        .onValue
+        .map((event) {
+      int count = 0;
+      
+      if (event.snapshot.exists && event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          if (value is Map) {
+            final isRead = value['isRead'] == true || value['isRead'] == 'true';
+            if (!isRead) count++;
+          }
+        });
+      }
+      
+      return count;
+    });
   }
 }
 

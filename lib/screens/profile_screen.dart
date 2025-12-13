@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../data/theme_manager.dart';
 import '../data/auth_service.dart';
 import 'settings_screen.dart';
+import 'notifications_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -163,7 +164,12 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   MaterialPageRoute(builder: (context) => const SettingsScreen()),
                 );
               }),
-              _buildMenuItem(context, Icons.notifications_outlined, 'Notifications'),
+              _buildMenuItem(context, Icons.notifications_outlined, 'Notifications', onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                );
+              }),
               _buildMenuItem(context, Icons.help_outline, 'Help & Support'),
               _buildMenuItem(context, Icons.logout, 'Logout', isLogout: true, onTap: _handleLogout),
               const SizedBox(height: 100), // Space for bottom nav

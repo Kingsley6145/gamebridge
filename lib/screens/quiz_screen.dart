@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/course.dart';
+import '../data/firebase_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final Course course;
@@ -16,6 +17,33 @@ class _QuizScreenState extends State<QuizScreen> {
   int? selectedAnswerIndex;
   int correctAnswers = 0;
   bool showResult = false;
+  final FirebaseService _firebaseService = FirebaseService();
+  bool _notificationCreated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _createQuizOpenedNotification();
+  }
+
+  Future<void> _createQuizOpenedNotification() async {
+    if (_notificationCreated) return;
+    
+    try {
+      await _firebaseService.createNotification(
+        title: 'Quiz Available! 📝',
+        message: 'A quiz is available for "${widget.course.title}". Test your knowledge!',
+        type: 'quizOpened',
+        metadata: {
+          'courseId': widget.course.id,
+          'courseTitle': widget.course.title,
+        },
+      );
+      _notificationCreated = true;
+    } catch (e) {
+      debugPrint('Error creating quiz notification: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

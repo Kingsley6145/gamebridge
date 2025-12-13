@@ -172,12 +172,13 @@
       ".write": "auth != null",
       ".indexOn": ["challengerId", "challengedId", "status", "createdAt"]
     },
-    "notifications": {
-      ".read": "auth != null",
-      ".write": "auth != null",
+    "Gamebridge_notifications": {
       "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null"
+        ".read": true,
+        ".write": true,
+        "$notificationId": {
+          ".validate": "newData.hasChildren(['id', 'title', 'message', 'type', 'createdAt', 'isRead']) && newData.child('id').val() == $notificationId"
+        }
       }
     },
     "groupChallenges": {
