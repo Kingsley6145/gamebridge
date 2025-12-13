@@ -3,7 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_content.dart';
-import 'categories_screen.dart';
+import 'arcade_screen.dart';
 import 'favorites_screen.dart';
 import 'search_screen.dart';
 import 'profile_screen.dart';
@@ -18,17 +18,18 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 2; // Start on Home screen (index 2)
   bool _isBottomNavBarVisible = true;
   final FavoritesManager _favoritesManager = FavoritesManager();
   final AuthService _authService = AuthService();
+  late PageController _pageController;
 
   // Cache all screens to prevent rebuilding when switching tabs
-  // These screens are created once and kept in memory using IndexedStack
+  // These screens are created once and kept in memory using PageView
   late final List<Widget> _screens = [
-    const HomeContent(),
+    const ArcadeScreen(),
     const FavoritesScreen(),
-    const CategoriesScreen(),
+    const HomeContent(),
     const SearchScreen(),
     const ProfileScreen(),
   ];
@@ -47,6 +48,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    // Initialize PageController with initial page (Home screen at index 2)
+    _pageController = PageController(initialPage: 2);
     // Initialize favorites when user logs in
     _initializeFavorites();
     
@@ -78,12 +81,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _onTabChanged(int index) {
     setState(() {
       _currentIndex = index;
       // Reset nav bar visibility when switching tabs
       _isBottomNavBarVisible = true;
     });
+    // Animate to the selected page with smooth slide animation
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic, // Smooth, professional curve
+    );
   }
 
   @override
@@ -91,20 +106,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification notification) {
-          // Consume all scroll-related notifications to prevent overscroll indicator errors
-          // This prevents the _StretchController from triggering setState during layout
-          if (notification is OverscrollNotification) {
-            return true; // Consume overscroll notifications
-          }
-          // Don't process scroll notifications for nav bar hide/show to avoid errors
-          return false; // Allow notifications to continue but don't process them
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+            // Reset nav bar visibility when switching tabs
+            _isBottomNavBarVisible = true;
+          });
         },
-        child: IndexedStack(
-          index: _currentIndex,
-          children: _screens,
-        ),
+        physics: const BouncingScrollPhysics(), // iOS-like bounce effect
+        children: _screens,
       ),
       bottomNavigationBar: ClipRect(
         child: AnimatedContainer(
@@ -144,9 +156,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildNavItem(context, Icons.home, 'Home', 0),
+            _buildNavItem(context, Icons.sports_esports, 'Arcade', 0),
             _buildNavItem(context, Icons.favorite_outline, 'Favorites', 1),
-            _buildNavItem(context, Icons.filter_list, '', 2, isCenter: true),
+            _buildNavItem(context, Icons.home, '', 2, isCenter: true),
             _buildNavItem(context, Icons.search, 'Search', 3),
             _buildNavItem(context, Icons.person_outline, 'Profile', 4),
           ],
@@ -186,7 +198,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
               ],
             ),
-            child: const Icon(Icons.filter_list, color: Colors.white, size: 28),
+            child: const Icon(Icons.home, color: Colors.white, size: 28),
           ),
         ),
       );
@@ -205,10 +217,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    icon,
-                    color: isActive ? activeColor : inactiveColor,
-                    size: 20,
+                  AnimatedScale(
+                    scale: isActive ? 1.1 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    child: Icon(
+                      icon,
+                      color: isActive ? activeColor : inactiveColor,
+                      size: 20,
+                    ),
                   ),
                   if (label.isNotEmpty) ...[
                     const SizedBox(height: 1),

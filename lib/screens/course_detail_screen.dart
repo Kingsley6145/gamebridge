@@ -344,14 +344,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               });
                             }
                           }
-                        } else if (value == 'share') {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Share functionality coming soon'),
-                              backgroundColor: courseColor,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
                         }
                       },
                       itemBuilder: (BuildContext context) => [
@@ -380,26 +372,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 _isLoadingFavorite
                                     ? 'Loading...'
                                     : (isFavorite ? 'Remove from Favorites' : 'Add to Favorites'),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'share',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.share,
-                                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Share',
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),

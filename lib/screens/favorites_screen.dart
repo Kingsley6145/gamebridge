@@ -184,20 +184,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'My Favorites',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
                 // Search Bar
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

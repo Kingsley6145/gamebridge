@@ -38,6 +38,10 @@ void main() async {
     WebViewPlatform.instance = AndroidWebViewPlatform();
   }
   
+  // Initialize theme manager to load saved preference
+  final themeManager = ThemeManager();
+  await themeManager.initialize();
+  
   // Initialize courses - loads from cache immediately, then fetches from Firebase in background
   // This ensures instant loading while keeping data fresh
   initializeCourses().catchError((error) {

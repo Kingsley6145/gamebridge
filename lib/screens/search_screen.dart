@@ -16,17 +16,39 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
   bool get wantKeepAlive => true;
 
   final TextEditingController _searchController = TextEditingController();
+  String? selectedCategory;
+  bool showPremiumOnly = false;
 
   List<Course> get filteredCourses {
-    if (_searchController.text.isEmpty) {
-      return allCourses;
+    List<Course> filtered = List.from(allCourses);
+
+    // Apply search filter
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      filtered = filtered.where((course) {
+        return course.title.toLowerCase().contains(query) ||
+            course.category.toLowerCase().contains(query) ||
+            course.description.toLowerCase().contains(query);
+      }).toList();
     }
-    final query = _searchController.text.toLowerCase();
-    return allCourses.where((course) {
-      return course.title.toLowerCase().contains(query) ||
-          course.category.toLowerCase().contains(query) ||
-          course.description.toLowerCase().contains(query);
-    }).toList();
+
+    // Apply category filter
+    if (selectedCategory != null && selectedCategory != 'All') {
+      filtered = filtered.where((course) => course.category == selectedCategory).toList();
+    }
+
+    // Apply premium filter
+    if (showPremiumOnly) {
+      filtered = filtered.where((course) => course.isPremium).toList();
+    }
+
+    return filtered;
+  }
+
+  List<String> get uniqueCategories {
+    final categories = allCourses.map((course) => course.category).toSet().toList();
+    categories.sort();
+    return ['All', ...categories];
   }
 
   @override
@@ -124,147 +146,434 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Search Courses',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, color: Colors.grey[400], size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search for courses...',
-                            hintStyle: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey[400],
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                          ),
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: textColor,
-                          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: Icon(Icons.clear, color: Colors.grey[400], size: 18),
-                          iconSize: 18,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: filteredCourses.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(40),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 80,
-                            color: isDark ? Colors.grey[600] : Colors.grey[300],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No results found',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try a different search term',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: isDark ? Colors.grey[500] : Colors.grey[500],
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  )
-                : SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        if (_searchController.text.isNotEmpty) ...[
-                          Text(
-                            'Results (${filteredCourses.length})',
+                        Icon(Icons.search, color: Colors.grey[400], size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search for courses...',
+                              hintStyle: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[400],
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
                             style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                               color: textColor,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filteredCourses.length,
-                          itemBuilder: (context, index) {
-                            final course = filteredCourses[index];
-                            return _CourseCard(
-                              course: course,
-                              getIconColor: _getIconColor,
-                              getCourseImagePath: _getCourseImagePath,
-                            );
-                          },
                         ),
-                        const SizedBox(height: 100), // Space for bottom nav
+                        if (_searchController.text.isNotEmpty)
+                          IconButton(
+                            icon: Icon(Icons.clear, color: Colors.grey[400], size: 18),
+                            iconSize: 18,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                          ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => _showCategoriesBottomSheet(context, theme, isDark, textColor, cardColor),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: (selectedCategory != null || showPremiumOnly)
+                                  ? const Color(0xFFBA1E4D).withOpacity(0.1)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.filter_list,
+                              color: (selectedCategory != null || showPremiumOnly)
+                                  ? const Color(0xFFBA1E4D)
+                                  : Colors.grey[400],
+                              size: 20,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-          ),
-        ],
-      ),
+                  // Show active filters
+                  if (selectedCategory != null || showPremiumOnly) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (selectedCategory != null)
+                          _buildFilterChip(
+                            label: selectedCategory!,
+                            onRemove: () {
+                              setState(() {
+                                selectedCategory = null;
+                              });
+                            },
+                            isDark: isDark,
+                            textColor: textColor,
+                          ),
+                        if (showPremiumOnly)
+                          _buildFilterChip(
+                            label: 'Premium Only',
+                            onRemove: () {
+                              setState(() {
+                                showPremiumOnly = false;
+                              });
+                            },
+                            isDark: isDark,
+                            textColor: textColor,
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(
+              child: filteredCourses.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 80,
+                              color: isDark ? Colors.grey[600] : Colors.grey[300],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No results found',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Try a different search term or adjust filters',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: isDark ? Colors.grey[500] : Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_searchController.text.isNotEmpty || selectedCategory != null || showPremiumOnly) ...[
+                            Text(
+                              'Results (${filteredCourses.length})',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: filteredCourses.length,
+                            itemBuilder: (context, index) {
+                              final course = filteredCourses[index];
+                              return _CourseCard(
+                                course: course,
+                                getIconColor: _getIconColor,
+                                getCourseImagePath: _getCourseImagePath,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _buildFilterChip({
+    required String label,
+    required VoidCallback onRemove,
+    required bool isDark,
+    required Color textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFBA1E4D).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFBA1E4D).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFFBA1E4D),
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onRemove,
+            child: Icon(
+              Icons.close,
+              size: 16,
+              color: const Color(0xFFBA1E4D),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCategoriesBottomSheet(
+    BuildContext context,
+    ThemeData theme,
+    bool isDark,
+    Color textColor,
+    Color cardColor,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filters',
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                        color: textColor,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Premium Only Toggle
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2A2A2A) : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.workspace_premium,
+                              color: const Color(0xFFFFC107),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Premium Only',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: showPremiumOnly,
+                          onChanged: (value) {
+                            setState(() {
+                              showPremiumOnly = value;
+                            });
+                          },
+                          activeColor: const Color(0xFFBA1E4D),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Categories',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: uniqueCategories.map((category) {
+                      final isSelected = selectedCategory == category || (category == 'All' && selectedCategory == null);
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedCategory = category == 'All' ? null : category;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFBA1E4D) : cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFFBA1E4D) : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            category,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              color: isSelected ? Colors.white : textColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedCategory = null;
+                              showPremiumOnly = false;
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: const Color(0xFFBA1E4D)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Clear All',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFBA1E4D),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: const Color(0xFFBA1E4D),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Apply',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
 
 class _CourseCard extends StatelessWidget {

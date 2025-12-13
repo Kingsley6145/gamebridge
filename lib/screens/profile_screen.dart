@@ -103,15 +103,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Profile',
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 30),
               Center(
                 child: Column(
                   children: [
